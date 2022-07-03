@@ -1,0 +1,4 @@
+[toolchain]
+channel = "1.62.0"
+components = [ "rustc", "cargo", "rustfmt", "rust-std", "rust-docs", "rustc-dev", "clippy", "rust-src", "llvm-tools-preview" ]
+targets = [ "thumbv7em-none-eabihf" ] # For the examples.
