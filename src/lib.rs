@@ -37,9 +37,15 @@ impl<I: Debug, F: FnMut(&I)> Benchmark<I> for F {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Copy)]
 #[doc(hidden)]
 pub struct HListIterator<'a, Inner: ?Sized>(&'a Inner);
+
+impl<'a, T: ?Sized> Clone for HListIterator<'a, T> {
+    fn clone(&self) -> Self {
+        Self(<&T>::clone(&self.0))
+    }
+}
 
 impl<'a> Iterator for HListIterator<'a, (dyn RunnableBenchmarkList + 'a)> {
     type Item = &'static str;
@@ -150,7 +156,7 @@ where
     I: IntoIterator<Item = Inp>,
     L: RunnableSuiteBenchmarkList<Inp>,
     Rest: RunnableBenchmarkList,
-    for<'a> HListIterator<'a, dyn RunnableSuiteBenchmarkList<Inp> + 'a>: Clone
+    for<'a> HListIterator<'a, dyn RunnableSuiteBenchmarkList<Inp> + 'a>: Clone,
 {
     fn run<M: Metric, R: Reporter<M::Unit>>(self, m: &mut M, r: &mut R, iterations: usize) {
         let (mut this, rest) = self;
@@ -308,20 +314,31 @@ impl<Inp: Debug, I: IntoIterator<Item = Inp>, L: RunnableSuiteBenchmarkList<Inp>
     }
 }
 
+impl Default for BenchmarkRunner<()> {
+    fn default() -> Self {
+        Self {
+            iterations: 1,
+            list: (),
+        }
+    }
+}
+
 pub struct BenchmarkRunner<L: RunnableBenchmarkList = ()> {
     iterations: usize,
     list: L,
 }
 
-impl<L: RunnableBenchmarkList> BenchmarkRunner<L> {
-    pub fn new() -> BenchmarkRunner<()> {
+impl BenchmarkRunner {
+    pub const fn new() -> BenchmarkRunner<()> {
         BenchmarkRunner {
             iterations: 1,
             list: (),
         }
     }
+}
 
-    pub fn set_iterations(mut self, it: usize) -> Self {
+impl<L: RunnableBenchmarkList> BenchmarkRunner<L> {
+    pub const fn set_iterations(mut self, it: usize) -> Self {
         self.iterations = it;
         self
     }
@@ -339,7 +356,7 @@ impl<L: RunnableBenchmarkList> BenchmarkRunner<L> {
 
     pub fn run<M: Metric, R: Reporter<M::Unit>>(self, metric: &mut M, reporter: &mut R)
     where
-        for<'a> HListIterator<'a, dyn RunnableBenchmarkList + 'a>: Clone
+        for<'a> HListIterator<'a, dyn RunnableBenchmarkList + 'a>: Clone,
     {
         reporter.top_level_benchmarks(HListIterator(&self.list as _));
         reporter.num_iterations(self.iterations);
@@ -360,8 +377,8 @@ pub trait Metric {
 }
 
 pub trait Reporter<Unit> {
-    fn top_level_benchmarks<I: Iterator<Item = &'static str> + Clone>(&mut self, names: I);
-    fn num_iterations(&mut self, iterations: usize);
+    fn top_level_benchmarks<I: Iterator<Item = &'static str> + Clone>(&mut self, names: I) { }
+    fn num_iterations(&mut self, iterations: usize) { }
 
     // single benchmarks go in this order:
     // input 1:
@@ -377,15 +394,15 @@ pub trait Reporter<Unit> {
         &mut self,
         name: &'static str,
         inputs_size_hint: (usize, Option<usize>),
-    );
+    ) { }
     fn single_benchmark_run(
         &mut self,
         input_idx: usize,
         input: &dyn Debug,
         iteration_idx: usize,
         measurement: Unit,
-    );
-    fn ending_single_benchmark(&mut self, name: &'static str);
+    ) { }
+    fn ending_single_benchmark(&mut self, name: &'static str) { }
 
     // benchmark suites go in this order:
     // input 1:
@@ -406,7 +423,7 @@ pub trait Reporter<Unit> {
         name: &'static str,
         inputs_size_hint: (usize, Option<usize>),
         benchmark_names: I,
-    );
+    ) { }
     fn suite_benchmark_run(
         &mut self,
         input_idx: usize,
@@ -415,8 +432,11 @@ pub trait Reporter<Unit> {
         benchmark_name: &'static str,
         iteration_idx: usize,
         measurement: Unit,
-    );
-    fn ending_benchmark_suite(&mut self, name: &'static str);
+    ) { }
+    fn ending_benchmark_suite(&mut self, name: &'static str) { }
+
+    fn ended(&mut self) { }
+}
 
     fn ended(&mut self);
 }
