@@ -141,14 +141,13 @@ where
 
         for (inp_idx, inp) in inputs.enumerate() {
             for it_idx in 0..iterations {
-                this.benchmark.setup();
-                let before = m.record();
+                this.benchmark.setup(&inp);
+                let before = m.start();
                 #[allow(clippy::unit_arg)]
                 black_box(this.benchmark.run(black_box(&inp)));
-                let after = m.record();
+                let measurement = m.end(before);
                 this.benchmark.teardown();
 
-                let measurement = after - before;
                 r.single_benchmark_run(inp_idx, &inp, it_idx, measurement);
             }
         }
@@ -262,14 +261,13 @@ where
         let (ref mut this, rest) = self;
 
         for it_idx in 0..iterations {
-            this.benchmark.setup();
-            let before = m.record();
+            this.benchmark.setup(inp);
+            let before = m.start();
             #[allow(clippy::unit_arg)]
             black_box(this.benchmark.run(black_box(inp)));
-            let after = m.record();
+            let measurement = m.end(before);
             this.benchmark.teardown();
 
-            let measurement = after - before;
             r.suite_benchmark_run(inp_idx, inp, benchmark_idx, this.name, it_idx, measurement);
         }
 
@@ -385,12 +383,11 @@ impl<L: RunnableBenchmarkList> BenchmarkRunner<L> {
 }
 
 pub trait Metric {
-    type Unit: Sub<Output = Self::Unit>
-        + Add<Output = Self::Unit>
-        + Div<Output = Self::Unit>
-        + PartialOrd
-        + PartialEq;
-    fn record(&mut self) -> Self::Unit;
+    type Unit: PartialOrd + PartialEq;
+    type Start;
+
+    fn start(&mut self) -> Self::Start;
+    fn end(&mut self, start: Self::Start) -> Self::Unit;
 }
 
 #[allow(unused_variables)]
