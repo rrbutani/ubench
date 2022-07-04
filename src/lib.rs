@@ -75,6 +75,23 @@ pub trait RunnableBenchmarkList {
     where
         Self: Sized;
 
+    /// # TODO: doc comments!
+    ///
+    /// ## Why Use a Trait Object Here?
+    ///
+    /// Using recursion and trait objects (to erase the specific types of the
+    /// benchmarks in the list) to get the names of the benchmarks in the list
+    /// seems bad but I think it's the pragmatic choice here.
+    ///
+    /// Usually we'd want to expose a static type (i.e. `&'static [&'static
+    /// str]`) for stuff like this but, to do that we'd need to use `unsafe` to
+    /// transmute the nested type that we _could_ generate using type
+    /// shenanigans, `generic-array` style.
+    ///
+    /// In this case, performance isn't _really_ a concerna and the optimizer
+    /// and the LLVM devirtualizer seem to make quick work of this anyways,
+    /// successfully boiling away the trait objects:
+    /// https://rust.godbolt.org/z/cd89GcfPT
     fn name_and_next<'a>(&'a self) -> Option<(&'static str, &'a (dyn RunnableBenchmarkList + 'a))>;
     fn len(&self) -> usize;
 }
