@@ -8,7 +8,8 @@ This is a tiny crate that attempts to help you benchmark things running on micro
 
 This is **not** a particularly good crate. It:
   - does not attempt to be [statistically rigorous](https://github.com/bheisler/criterion.rs)
-  - does not provide mechanisms for host-side processing
+  - does not try to mitigate the effects of CPU caches/frequency scaling/OS context switches, etc. on benchmarks
+  - does not really provide machinery for host-side processing
   - does not attempt to mimic the output of the [`test::bench` module](https://doc.rust-lang.org/test/bench/index.html)
   - does not make use of the [`defmt` ecosystem](https://github.com/knurling-rs/defmt) [^1] (in order to support boards that do not have `probe-rs` support)
 
@@ -22,6 +23,20 @@ The closest thing out there (that I am aware of) that serves this use case is [`
 
 ## how does it work?
 
+(overview of the traits:
+  - `Benchmark` which can be: `fn`, closure impling `FnMut`, custom impl with `setup` + `teardown`
+  - `BenchmarkRunner` lets you actually run benchmarks; two kinds
+    + single (constructible with `single`)
+      * one `Benchmark` impl that takes some `Inp` type by value
+    + suite (constructible with `suite`)
+      * zero or more `Benchmark` impls that take some `Inp` type by _reference_ (`&Inp`)
+    + each of these also take some `impl IntoIterator<Item = T>` as an input source where `T: Debug`
+  - to actually run the benchmarks you need:
+    + a `Metric`
+      * some way to actually measure the benchmarks; i.e. time, cycle counts
+    + a `Reporter`
+      * some way to report out the results of the benchmarking
+)
 
 
 ## usage
