@@ -393,6 +393,7 @@ pub trait Metric {
     fn record(&mut self) -> Self::Unit;
 }
 
+#[allow(unused_variables)]
 pub trait Reporter<Unit> {
     fn top_level_benchmarks<I: Iterator<Item = &'static str> + Clone>(&mut self, names: I) { }
     fn num_iterations(&mut self, iterations: usize) { }

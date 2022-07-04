@@ -25,11 +25,12 @@ The closest thing out there (that I am aware of) that serves this use case is [`
 
 (overview of the traits:
   - `Benchmark` which can be: `fn`, closure impling `FnMut`, custom impl with `setup` + `teardown`
+    + these take some `Inp` data _by reference_
   - `BenchmarkRunner` lets you actually run benchmarks; two kinds
     + single (constructible with `single`)
-      * one `Benchmark` impl that takes some `Inp` type by value
+      * exactly one `Benchmark` impl
     + suite (constructible with `suite`)
-      * zero or more `Benchmark` impls that take some `Inp` type by _reference_ (`&Inp`)
+      * zero or more `Benchmark` impls that are all run on the same input data
     + each of these also take some `impl IntoIterator<Item = T>` as an input source where `T: Debug`
   - to actually run the benchmarks you need:
     + a `Metric`
