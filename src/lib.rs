@@ -5,7 +5,8 @@
 //! TODO!
 
 use core::{
-    fmt::Debug,
+    any::Any,
+    fmt::{self, Debug},
     marker::PhantomData,
     ops::{Add, Div, Sub},
 };
@@ -19,11 +20,12 @@ pub fn black_box<T>(x: T) -> T {
     }
 }
 
-pub trait Benchmark<Inp: Debug> {
+pub trait Benchmark<Inp: Any + Debug> {
     /// Called before every call to `run`.
     ///
     /// For stuff you wish to have run once, use a constructor function.
-    fn setup(&mut self) {}
+    #[allow(unused_variables)]
+    fn setup(&mut self, inp: &Inp) {}
     /// This is what is actually measured.
     fn run(&mut self, inp: &Inp);
     /// Called after every call to `run`.
@@ -32,7 +34,7 @@ pub trait Benchmark<Inp: Debug> {
     fn teardown(&mut self) {}
 }
 
-impl<I: Debug, F: FnMut(&I)> Benchmark<I> for F {
+impl<I: Any + Debug, F: FnMut(&I)> Benchmark<I> for F {
     fn run(&mut self, inp: &I) {
         self(inp)
     }
@@ -107,14 +109,14 @@ impl RunnableBenchmarkList for () {
     }
 }
 
-pub struct SingleBenchmark<B: Benchmark<Inp>, Inp: Debug, I: IntoIterator<Item = Inp>> {
+pub struct SingleBenchmark<B: Benchmark<Inp>, Inp: Any + Debug, I: IntoIterator<Item = Inp>> {
     name: &'static str,
     benchmark: B,
     inputs: I,
     _p: PhantomData<Inp>,
 }
 
-pub fn single<B: Benchmark<Inp>, Inp: Debug, I: IntoIterator<Item = Inp>>(
+pub fn single<B: Benchmark<Inp>, Inp: Any + Debug, I: IntoIterator<Item = Inp>>(
     name: &'static str,
     benchmark: B,
     inputs: I,
@@ -130,7 +132,7 @@ pub fn single<B: Benchmark<Inp>, Inp: Debug, I: IntoIterator<Item = Inp>>(
 impl<B, Inp, I, Rest> RunnableBenchmarkList for (SingleBenchmark<B, Inp, I>, Rest)
 where
     B: Benchmark<Inp>,
-    Inp: Debug,
+    Inp: Any + Debug,
     I: IntoIterator<Item = Inp>,
     Rest: RunnableBenchmarkList,
 {
@@ -246,7 +248,7 @@ impl<I: Debug> RunnableSuiteBenchmarkList<I> for () {
 
 impl<I, B, Rest> RunnableSuiteBenchmarkList<I> for (SuiteMember<B, I>, Rest)
 where
-    I: Debug,
+    I: Any + Debug,
     B: Benchmark<I>,
     Rest: RunnableSuiteBenchmarkList<I>,
 {
@@ -284,7 +286,7 @@ where
     }
 }
 
-pub struct SuiteMember<B: Benchmark<Inp>, Inp: Debug> {
+pub struct SuiteMember<B: Benchmark<Inp>, Inp: Any + Debug> {
     name: &'static str,
     benchmark: B,
     _p: PhantomData<Inp>,
@@ -309,7 +311,7 @@ pub fn suite<Inp: Debug, I: IntoIterator<Item = Inp>>(
     }
 }
 
-impl<Inp: Debug, I: IntoIterator<Item = Inp>, L: RunnableSuiteBenchmarkList<Inp>> Suite<Inp, I, L> {
+impl<Inp: Any + Debug, I: IntoIterator<Item = Inp>, L: RunnableSuiteBenchmarkList<Inp>> Suite<Inp, I, L> {
     pub fn add<B: Benchmark<Inp>>(
         self,
         name: &'static str,
@@ -393,8 +395,8 @@ pub trait Metric {
 
 #[allow(unused_variables)]
 pub trait Reporter<Unit> {
-    fn top_level_benchmarks<I: Iterator<Item = &'static str> + Clone>(&mut self, names: I) { }
-    fn num_iterations(&mut self, iterations: usize) { }
+    fn top_level_benchmarks<I: Iterator<Item = &'static str> + Clone>(&mut self, names: I) {}
+    fn num_iterations(&mut self, iterations: usize) {}
 
     // single benchmarks go in this order:
     // input 1:
@@ -410,15 +412,17 @@ pub trait Reporter<Unit> {
         &mut self,
         name: &'static str,
         inputs_size_hint: (usize, Option<usize>),
-    ) { }
+    ) {
+    }
     fn single_benchmark_run(
         &mut self,
         input_idx: usize,
         input: &dyn Debug,
         iteration_idx: usize,
         measurement: Unit,
-    ) { }
-    fn ending_single_benchmark(&mut self, name: &'static str) { }
+    ) {
+    }
+    fn ending_single_benchmark(&mut self, name: &'static str) {}
 
     // benchmark suites go in this order:
     // input 1:
@@ -439,7 +443,8 @@ pub trait Reporter<Unit> {
         name: &'static str,
         inputs_size_hint: (usize, Option<usize>),
         benchmark_names: I,
-    ) { }
+    ) {
+    }
     fn suite_benchmark_run(
         &mut self,
         input_idx: usize,
@@ -448,10 +453,11 @@ pub trait Reporter<Unit> {
         benchmark_name: &'static str,
         iteration_idx: usize,
         measurement: Unit,
-    ) { }
-    fn ending_benchmark_suite(&mut self, name: &'static str) { }
+    ) {
+    }
+    fn ending_benchmark_suite(&mut self, name: &'static str) {}
 
-    fn ended(&mut self) { }
+    fn ended(&mut self) {}
 }
 
     fn ended(&mut self);
