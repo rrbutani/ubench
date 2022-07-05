@@ -5,3 +5,9 @@ edition = "2021"
 rust-version = "1.62.0"
 
 [dependencies]
+
+[package.metadata.docs.rs]
+targets = [""]
+rustdoc-args = ["--cfg", "docs"]
+all-features = true
+default-target = ""
