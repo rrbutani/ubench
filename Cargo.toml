@@ -8,11 +8,13 @@ rust-version = "1.62.0"
 
 # For `Metric` impls:
 cortex-m = { version = "0.7", optional = true }
+riscv = { version = "0.8", optional = true }
 
 [features]
 
 # For `Metric` impls:
 cortex-m = ["dep:cortex-m"]
+riscv = ["dep:riscv"]
 
 [package.metadata.docs.rs]
 targets = [""]

@@ -598,6 +598,51 @@ pub mod metrics {
         }
     }
 
+    feature_gated! {
+        riscv_metrics gated on "riscv" {
+            use riscv::register::cycle;
+            /// NOTE: **UNTESTED**.
+            ///
+            /// We don't check the pre-conditions; as per [cycle](cycle),
+            /// this requires other bits to be set first.
+            ///
+            /// This `Metric` also will not accurately report cycle counts
+            /// when the counter overflow _multiple_ times (i.e. when the
+            /// cycle count exceeds [`u64::MAX`]).
+            pub struct RiscVCycleCount;
+
+            impl Metric for RiscVCycleCount {
+                type Start = u64;
+                type Unit = u64;
+                type Divisor = u64;
+
+                const UNIT_NAME: &'static str = "cycles";
+
+                fn start(&mut self) -> u64 {
+                    cycle::read64()
+                }
+
+                // TODO: we don't really have a way to guard against overflow
+                // here :(
+                //
+                // If the cycle counter overflowed multiple times we will not
+                // know and will not be able to report it.
+                fn end(&mut self, s: u64) -> u64 {
+                    let end = cycle::read64();
+                    if end > s {
+                        end - s
+                    } else {
+                        // TODO: this is probably not entirely right; not all
+                        // impls actually have the counter go up to 64-bits, I think?
+                        //
+                        // https://ibex-core.readthedocs.io/en/latest/03_reference/performance_counters.html
+                        u64::MAX - (s - end)
+                    }
+                }
+            }
+        }
+    }
+
 }
 
 // struct JsonReporter<
