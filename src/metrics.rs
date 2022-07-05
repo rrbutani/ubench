@@ -44,7 +44,7 @@ macro_rules! feature_gated {
         $($i:item)*
     }) => {
         #[cfg(feature = $feature)]
-        #[cfg_attr(docs, doc(cfg(feature = $feature)))]
+        #[cfg_attr(all(docs, not(doctest)), doc(cfg(feature = $feature)))]
         mod $mod_name {
             use crate::Metric;
 

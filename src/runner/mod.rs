@@ -85,8 +85,7 @@ pub trait RunnableBenchmarkList {
     ///
     /// In this case, performance isn't _really_ a concerna and the optimizer
     /// and the LLVM devirtualizer seem to make quick work of this anyways,
-    /// successfully boiling away the trait objects:
-    /// https://rust.godbolt.org/z/cd89GcfPT
+    /// successfully [boiling away the trait objects](https://rust.godbolt.org/z/cd89GcfPT)
     fn name_and_next<'a>(&'a self) -> Option<(&'static str, &'a (dyn RunnableBenchmarkList + 'a))>;
     fn len(&self) -> usize;
 }

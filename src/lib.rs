@@ -1,20 +1,20 @@
-#![cfg_attr(docs, feature(doc_cfg))]
+#![cfg_attr(all(docs, not(doctest)), feature(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![doc = include_str!("../README.md")]
 //!
 //! TODO!
 
-mod bench;
+pub mod bench;
 pub use bench::Benchmark;
 
-mod runner;
+pub mod runner;
 pub use runner::{single, suite, BenchmarkRunner};
 
-mod metrics;
-pub use metrics::*;
+pub mod metrics;
+pub use metrics::Metric;
 
-mod reporters;
-pub use reporters::*;
+pub mod reporters;
+pub use reporters::Reporter;
 
 #[cfg(test)]
 mod tests {

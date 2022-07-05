@@ -32,6 +32,7 @@ The closest thing out there (that I am aware of) that serves this use case is [`
     + suite (constructible with `suite`)
       * zero or more `Benchmark` impls that are all run on the same input data
     + each of these also take some `impl IntoIterator<Item = T>` as an input source where `T: Debug`
+      * this can be things like a range (`0..10`), an array (`["hey", "there"]`), an iterator (`(0..10).map(|x| 2u32.pow(x))`), etc.
   - to actually run the benchmarks you need:
     + a `Metric`
       * some way to actually measure the benchmarks; i.e. time, cycle counts
