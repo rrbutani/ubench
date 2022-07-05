@@ -643,6 +643,41 @@ pub mod metrics {
         }
     }
 
+    feature_gated! {
+        embedded_time_metrics gated on "embedded-time" {
+            use embedded_time::{Clock, Instant, ConversionError, duration::{Generic, Nanoseconds}};
+            use core::fmt;
+
+            pub struct EmbeddedTimeClock<'c, C: Clock>(pub &'c C)
+            where
+                Generic<C::T>: TryInto<Nanoseconds<u64>, Error = ConversionError>;
+
+            impl<'c, C: Clock> Metric for EmbeddedTimeClock<'c, C>
+            where
+                Generic<C::T>: TryInto<Nanoseconds<u64>, Error = ConversionError>,
+            {
+                type Start = Instant<C>;
+                type Unit = Nanoseconds<u64>;
+                type Divisor = u64;
+
+                const UNIT_NAME: &'static str = "nanoseconds";
+
+                fn start(&mut self) -> Instant<C> {
+                    self.0.try_now().unwrap()
+                }
+
+                fn end(&mut self, s: Instant<C>) -> Nanoseconds<u64> {
+                    let end = self.0.try_now().unwrap();
+                    let dur: Generic<C::T> = s.checked_duration_since(&end).unwrap();
+                    dur.try_into().unwrap()
+                }
+
+                fn print(u: &Self::Unit, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    fmt::Display::fmt(u, f)
+                }
+            }
+        }
+    }
 }
 
 // struct JsonReporter<
