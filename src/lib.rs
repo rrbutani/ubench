@@ -386,11 +386,22 @@ impl<L: RunnableBenchmarkList> BenchmarkRunner<L> {
 }
 
 pub trait Metric {
-    type Unit: PartialOrd + PartialEq;
+    type Unit: PartialOrd
+        + PartialEq
+        + Add<Output = Self::Unit>
+        + Sub<Output = Self::Unit>
+        + Div<Self::Divisor, Output = Self::Unit>
+        + Debug;
+    type Divisor: TryFrom<usize> /* = Self::Unit */;
     type Start;
+
+    const UNIT_NAME: &'static str = "unknown";
 
     fn start(&mut self) -> Self::Start;
     fn end(&mut self, start: Self::Start) -> Self::Unit;
+    fn print(u: &Self::Unit, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Debug::fmt(u, f)
+    }
 }
 
 #[allow(unused_variables)]
