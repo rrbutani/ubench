@@ -6,6 +6,14 @@ rust-version = "1.62.0"
 
 [dependencies]
 
+# For `Metric` impls:
+cortex-m = { version = "0.7", optional = true }
+
+[features]
+
+# For `Metric` impls:
+cortex-m = ["dep:cortex-m"]
+
 [package.metadata.docs.rs]
 targets = [""]
 rustdoc-args = ["--cfg", "docs"]

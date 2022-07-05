@@ -532,6 +532,72 @@ pub mod metrics {
         }
     }
 
+    feature_gated! {
+        cortex_m_metrics gated on "cortex-m" {
+            use cortex_m::peripheral::{DWT, DCB};
+
+            /// NOTE: **cannot detect overflows** of the [`DWT` cycle
+            /// counter](cortex_m::peripheral::dwt::RegisterBlock::cyccnt).
+            ///
+            /// This means this metric won't return accurate results for
+            /// benchmarks that take longer than `u32::MAX` cycles to run.
+            pub struct CortexMCycleCount<'d>(&'d mut DWT);
+
+            impl CortexMCycleCount<'_> {
+                pub fn new<'d, 'b>(dwt: &'d mut DWT, dcb: &'b mut DCB) -> Result<CortexMCycleCount<'d>, ()> {
+                    // We need a cycle counter to function!
+                    if !DWT::has_cycle_counter() {
+                        return Err(())
+                    }
+
+                    // As per the docs (https://docs.rs/cortex-m/latest/cortex_m/peripheral/struct.DCB.html#method.enable_trace)
+                    // enable tracing first so we can use the DWT unit.
+                    dcb.enable_trace();
+
+                    // This is needed on some devices.
+                    DWT::unlock();
+
+                    // Next, enable the cycle counter:
+                    dwt.enable_cycle_counter();
+
+                    // Retain a reference to the DWT unit so we can reset the cycle counter.
+                    Ok(CortexMCycleCount(dwt))
+                }
+            }
+
+            #[derive(Debug)]
+            struct Priv;
+
+            #[derive(Debug)]
+            pub struct CortexMCycleCountStart(Priv); // Empty type to serve as a witness.
+            impl<'d> Metric for CortexMCycleCount<'d> {
+                type Start = CortexMCycleCountStart;
+                type Unit = u32;
+                type Divisor = u32;
+
+                const UNIT_NAME: &'static str = "cycles";
+
+                fn start(&mut self) -> CortexMCycleCountStart {
+                    // We zero the counter to start instead of recording a
+                    // starting value;
+                    //
+                    // This lets us simplify the logic in `end` (don't have
+                    // account for wrapping) and means that we don't have to
+                    // keep a counter value in a register or on the stack while
+                    // the benchmark is running.
+                    self.0.set_cycle_count(0);
+
+                    CortexMCycleCountStart(Priv)
+                }
+
+                fn end(&mut self, _: CortexMCycleCountStart) -> u32 {
+                    // Note: we still cannot detect overflows!
+                    DWT::cycle_count()
+                }
+            }
+        }
+    }
+
 }
 
 // struct JsonReporter<
