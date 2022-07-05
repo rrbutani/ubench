@@ -68,10 +68,12 @@ pub trait Reporter<Unit> {
     fn ended(&mut self) {}
 }
 
+/// A placeholder reporter that does nothing.
 pub struct NoOpReporter;
 
 impl<U> Reporter<U> for NoOpReporter {}
 
+mod io;
 // host side only, has:
 //   - pretty curved unicode table things (border colored on type)
 //   - single:
