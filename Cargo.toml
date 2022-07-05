@@ -11,15 +11,28 @@ cortex-m = { version = "0.7", optional = true }
 riscv = { version = "0.8", optional = true }
 embedded-time = { version = "0.12", optional = true }
 
+# For `Reporter` impls:
+embedded-hal = { version = "0.2", optional = true }
+serde = { version = "1", default-features = false, features = ["derive"], optional = true }
+
 [features]
+default = ["embedded-hal", "json"]
+
+std = ["serde?/std"] # Gates both `Metric` and `Reporter` impls
 
 # For `Metric` impls:
 cortex-m = ["dep:cortex-m"]
 riscv = ["dep:riscv"]
 embedded-time = ["dep:embedded-time"] # generic; `embedded-time::Clock` based
 
+# For `Reporter` impls:
+embedded-hal = ["dep:embedded-hal"]
+json = ["dep:serde"]
+
 [package.metadata.docs.rs]
 targets = [""]
 rustdoc-args = ["--cfg", "docs"]
 all-features = true
 default-target = ""
+
+# TESTS: all-features, no features

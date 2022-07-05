@@ -72,3 +72,46 @@ pub struct NoOpReporter;
 
 impl<U> Reporter<U> for NoOpReporter {}
 
+// host side only, has:
+//   - pretty curved unicode table things (border colored on type)
+//   - single:
+//     + listing of results for each input with ± and:
+//       * inline stats style |---[    ]----| diagrams for individual results
+//     + if inputs are: numbers (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize)
+//       and formatted `Unit` is parseable as a number or float
+//       * if inputs sequence is order of magnitude: use log scale for x axis
+//       * show a dot plot with inputs on the x axis and the metric on the y
+//   - suite:
+//     + table of results
+//       * ± on each entry
+//       * bold + colors for best/worst for each input
+//     + same as above, if inputs are numbers and formatted `Unit` is a number, then
+//       * show a dot plot (log scale if appropriate)
+//
+// pub struct PrettyPrintReporter<Unit, Out, Divisor = u32>(PhantomData<(Unit, Divisor)>)
+// where
+//     Unit:
+//         Add<Output = Unit> + // We'd like to use `num_traits::CheckedAdd` but this is not impl'd for Duration!
+//         Sub<Output = Unit> +
+//         Div<Divisor, Output = Unit> +
+//         PartialEq +
+//         PartialOrd +
+//         Display
+//         ,
+//     Out: std::io::Write,
+//     Divisor: TryFrom<usize>,
+// ;
+
+// device side, gated on `json`
+//
+// accepts embedded_hal::serial::Write | std::io::Write (todo: trait to unify these)
+pub struct JsonReporter;
+
+
+// host side, takes an `io::Read`, deserializes it as JSON, feeds it to a
+// Reporter (defaults to `PrettyPrintAdapter`)
+pub struct JsonToReporterAdapter;
+
+// device side, gated on `embedded-hal`; accepts
+// embedded_hal::serial::Write | std::io::Write
+pub struct BasicReporter;
