@@ -471,7 +471,42 @@ pub trait Reporter<Unit> {
     fn ended(&mut self) {}
 }
 
-    fn ended(&mut self);
+pub mod metrics {
+    use super::Metric;
+
+    /// A placeholder metric that just returns 1.
+    ///
+    /// Using this with [`BenchmarkRunner`](crate::BenchmarkRunner) should
+    /// yield `1` as the "result" for every benchmark.
+    #[derive(Default)]
+    pub struct NoOpMetric;
+
+    impl Metric for NoOpMetric {
+        type Unit = u32;
+        type Start = ();
+        type Divisor = u32;
+
+        fn start(&mut self) { }
+        fn end(&mut self, (): ()) -> u32 { 1 }
+    }
+
+    macro_rules! feature_gated {
+        ($mod_name:ident gated on $feature:literal {
+            $($i:item)*
+        }) => {
+            #[cfg(feature = $feature)]
+            #[cfg_attr(docs, doc(cfg(feature = $feature)))]
+            mod $mod_name {
+                use crate::Metric;
+
+                $($i)*
+            }
+
+            #[cfg(feature = $feature)]
+            #[doc(hidden)]
+            pub use $mod_name::*;
+        };
+    }
 }
 
 // struct JsonReporter<
