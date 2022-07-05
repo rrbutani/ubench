@@ -507,6 +507,31 @@ pub mod metrics {
             pub use $mod_name::*;
         };
     }
+
+    feature_gated! {
+        std_sys_time gated on "std" {
+            pub struct StdSysTime;
+
+            use std::time::{Duration, Instant};
+
+            impl Metric for StdSysTime {
+                type Start = Instant;
+                type Unit = Duration;
+                type Divisor = u32;
+
+                const UNIT_NAME: &'static str = "time";
+
+                fn start(&mut self) -> Instant {
+                    Instant::now()
+                }
+
+                fn end(&mut self, s: Instant) -> Duration {
+                    s.elapsed()
+                }
+            }
+        }
+    }
+
 }
 
 // struct JsonReporter<
