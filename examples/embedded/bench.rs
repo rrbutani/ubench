@@ -9,8 +9,8 @@ use panic_halt as _;
 use cortex_m_rt::entry;
 use tm4c123x_hal::{self as hal, prelude::*};
 
+use ubench::{metrics::*, reporters::*, *};
 use ubench_embedded_example_tm4c::*;
-use ubench::{*, metrics::*, reporters::*};
 
 #[entry]
 fn main() -> ! {
@@ -48,11 +48,11 @@ fn main() -> ! {
         .set_iterations(20)
         .add(
             suite("fibonacci comparison", (0..36).step_by(5))
-            .add("recursive", Recursive)
-            .add("iterative", Iterative)
-            .add("closed form", ClosedForm)
+                .add("recursive", Recursive)
+                .add("iterative", Iterative)
+                .add("closed form", ClosedForm),
         )
         .run(&mut m, &mut r);
 
-    loop { }
+    loop {}
 }

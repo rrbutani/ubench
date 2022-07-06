@@ -22,7 +22,7 @@
         # there (assuming Rosetta is installed: https://github.com/NixOS/nix/pull/4310).
         #
         # See: https://github.com/NixOS/nixpkgs/issues/147953
-        gdbPkgs' = let
+        gdbPkgs = let
           pkgs' = if pkgs.stdenv.isDarwin && pkgs.stdenv.isAarch64 then
             (import nixpkgs { system = "x86_64-darwin"; inherit overlays; })
           else

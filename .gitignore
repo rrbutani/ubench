@@ -4,3 +4,7 @@
 
 /examples/**/Cargo.lock
 /examples/**/target
+/examples/**/*.axf
+/examples/**/*.svg
+/examples/**/*.html
+

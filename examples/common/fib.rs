@@ -1,5 +1,5 @@
-use libm::{sqrt, pow, round};
 use crate::Benchmark;
+use libm::{pow, round, sqrt};
 
 pub fn recursive(n: u64) -> u64 {
     match n {
