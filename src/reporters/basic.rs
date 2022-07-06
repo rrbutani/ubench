@@ -2,9 +2,9 @@ use core::fmt::{self, Write};
 
 use owo_colors::{OwoColorize, Style};
 
-use crate::metrics::{Metric, MetricFmtAdapter};
 use super::io::{Output, OutputAdapter, Void};
 use super::Reporter;
+use crate::metrics::{Metric, MetricFmtAdapter};
 
 pub struct BasicReporter<'o, Out: Output + ?Sized, U = ()> {
     out: OutputAdapter<'o, Out>,
@@ -330,7 +330,8 @@ macro_rules! prefixed {
 impl<'o, O: Output + ?Sized, U> BasicReporter<'o, O, U> {
     fn print_stats<M: Metric<Unit = U>>(&mut self, indent: usize, sum: U, max: U, min: U)
     where
-        // rustc can't infer these, for some reason...
+        // rustc can't prove these are already satisfied by the `M: Metric<Unit
+        // = U>` impl, for some reason...
         U: core::ops::Div<M::Divisor, Output = U>,
         U: core::ops::Sub<Output = U>,
         U: Ord,
@@ -457,32 +458,6 @@ where
             ];
 
             // Next print the stats:
-            // let avg: M::Unit = {
-            //     let count: M::Divisor = self.iterations.try_into().map_err(|_| ()).unwrap();
-            //     current_sum / count
-            // };
-            // let range = {
-            //     let upper = current_max - avg;
-            //     let lower = avg - current_min;
-            //
-            //     upper.max(lower)
-            // };
-            // prefixed![(self) <-
-            //     (" "),
-            //     ("{}", " ".repeat(input_num_width + 2)),
-            //     ("{} ± {} ",
-            //         MetricFmtAdapter::<M>(&avg).style(self.format_options.avg_style),
-            //         MetricFmtAdapter::<M>(&range).style(self.format_options.range_style),
-            //     ),
-            //     ("{}[{} {} {}]{}",
-            //         "(".dimmed(),
-            //         MetricFmtAdapter::<M>(&current_min).style(self.format_options.min_style),
-            //         "to".dimmed(),
-            //         MetricFmtAdapter::<M>(&current_max).style(self.format_options.max_style),
-            //         ")".dimmed(),
-            //     ),
-            //     ("\n")
-            // ];
             prefixed![(self) <- (" ")];
             self.print_stats::<M>(input_num_width + 2, current_sum, current_max, current_min);
 
