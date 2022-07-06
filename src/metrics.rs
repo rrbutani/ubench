@@ -5,12 +5,13 @@ use core::{
 };
 
 pub trait Metric {
-    type Unit: PartialOrd
-        + PartialEq
+    type Unit: Ord
+        + Eq
         + Add<Output = Self::Unit>
         + Sub<Output = Self::Unit>
         + Div<Self::Divisor, Output = Self::Unit>
-        + Debug;
+        + Debug
+        + Copy;
     type Divisor: TryFrom<usize> /* = Self::Unit */;
     type Start;
 
@@ -20,6 +21,13 @@ pub trait Metric {
     fn end(&mut self, start: Self::Start) -> Self::Unit;
     fn print(u: &Self::Unit, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         Debug::fmt(u, f)
+    }
+}
+
+pub(crate) struct MetricFmtAdapter<'m, M: Metric>(pub &'m M::Unit);
+impl<'m, M: Metric> fmt::Display for MetricFmtAdapter<'m, M> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        M::print(self.0, f)
     }
 }
 
