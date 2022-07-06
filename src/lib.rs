@@ -16,20 +16,30 @@ pub use metrics::Metric;
 pub mod reporters;
 pub use reporters::Reporter;
 
+
+#[cfg(test)]
+#[path = "../examples/common/fib.rs"]
+mod fib;
+
+#[cfg(test)]
+#[path = "../examples/common/fib_memoized.rs"]
+mod fib_memoized;
+
+
 #[cfg(test)]
 mod tests {
     extern crate std;
-    use std::{fmt::Debug, any::Any};
+
     use super::*;
     use metrics::*;
     use reporters::*;
+    use std::{any::Any, fmt::Debug, string::String};
 
     fn foo(_i: &i32) {}
 
     struct B;
     impl<T: Debug + Any> Benchmark<T> for B {
-        fn setup(&mut self, _inp: &T) {}
-        fn teardown(&mut self) {}
+        type Res = ();
         fn run(&mut self, _inp: &T) {}
     }
 
@@ -47,7 +57,8 @@ mod tests {
     #[test]
     fn smoke_test() {
         let mut m = NoOpMetric::default();
-        let mut r = NoOpReporter;
+        let mut s = String::new();
+        let mut r = BasicReporter::new_with_fmt_write(&mut s);
 
         // Compile check: make sure single benchmarks and suites work!
         //
@@ -55,21 +66,60 @@ mod tests {
         //
         // Multiple input sources too.
         BenchmarkRunner::new()
+            .set_iterations(200)
+            .add(single("yopp", |_i: &_| {}, [89, 89, 89]))
             .add(single("yo", foo, [89, 89, 89]))
             .add(single("yo", B, std::vec!["erer", "ere", "erer"]))
             .add(single("yo", foo, [89, 89, 89]))
-            .add(single("yo", |_i: &_| {}, [89, 89, 89]))
             .add(single("yo", |_i: &_| {}, -23..34))
             .add(single("yo", |_i: &_| {}, (0..1024).step_by(2)))
             .add(single("yo", |_i: &_| {}, (0..10).map(|x| 2u32.pow(x))))
             .add(single("yo", |_i: &_| {}, inputs(2)))
             .add(single("yo", |_i: &_| {}, [89, 89, 89]))
             .add(
-                suite("3", [1, 2, 3])
+                suite("fibonacci comparison", [1, 2, 3])
                     .add("one", foo)
                     .add("two", B)
                     .add("three", |_x: &_| {}),
             )
             .run(&mut m, &mut r);
+
+        std::eprintln!("{}", s);
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn fibonacci_example() {
+        // use std::collections::HashMap;
+        // use std::vec::Vec;
+
+        use super::{fib::*, fib_memoized::*};
+
+        // use once_cell::sync::Lazy;
+
+        // static ANS: Lazy<Vec<u64>> = Lazy::new(|| {
+        //     const LIM: u64 = 90;
+        //     let mut cache = HashMap::<u64, u64>::with_capacity(LIM as usize);
+        //     (0..LIM).map(|i| memoized(i, &mut cache)).collect()
+        // });
+
+        let mut out = std::io::stderr();
+        let mut m = StdSysTime;
+        let mut r = BasicReporter::new_with_io_write(&mut out);
+
+        BenchmarkRunner::new()
+            .set_iterations(50)
+            .add(
+                // suite("fibonacci comparison", (0..7).map(|x| 2u64.pow(x)))
+                suite("fibonacci comparison", (0..35).step_by(5))
+                    .add("recursive", Recursive)
+                    .add("memoized", Memoized::default())
+                    .add("iterative", Iterative)
+                    .add("closed form", ClosedForm)
+            )
+            .run(&mut m, &mut r);
+
+        // dbg!(&ANS);
+        // assert!(false);
     }
 }
