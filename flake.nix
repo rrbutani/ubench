@@ -30,27 +30,6 @@
         in
           [ pkgs'.gdb ]
         ;
-
-        # As per https://github.com/ut-utp/.github/wiki/Dev-Environment-Setup#embedded-development-setup
-        # on Linux we need to expose `gdb` as `gdb-multiarch`
-        # (to match other distros):
-        gdbPkgs = if pkgs.stdenv.isLinux then
-          let
-            baseGdb = builtins.head gdbPkgs';
-            gdbMultiarch = pkgs.stdenvNoCC.mkDerivation {
-              pname = "gdb-multiarch";
-              inherit (baseGdb) version meta;
-              nativeBuildInputs = with pkgs; [ makeWrapper ];
-              unpackPhase = "true";
-              installPhase = ''
-                mkdir -p $out/bin
-                makeWrapper ${baseGdb}/bin/gdb $out/bin/gdb-multiarch
-              '';
-            };
-          in
-          [gdbMultiarch] ++ gdbPkgs'
-        else
-          gdbPkgs';
       in
       with pkgs;
       {
@@ -58,6 +37,7 @@
           buildInputs = [
             rust-toolchain
             openocd
+            picocom
           ] ++ gdbPkgs;
           shellHook = ''
           '';

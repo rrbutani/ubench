@@ -38,6 +38,10 @@ embedded-hal = ["dep:embedded-hal", "dep:nb"]
 json = ["dep:serde"]
 reporters = ["embedded-hal", "json"]
 
+[dev-dependencies]
+# once_cell = "1"
+libm = "0.2"
+
 [package.metadata.docs.rs]
 targets = [""]
 rustdoc-args = ["--cfg", "docs"]
