@@ -273,7 +273,7 @@ mod support {
                     write!(f, $($tt)+).unwrap();
                 )*
 
-                writeln!(f).unwrap();
+                write!(f, "\r\n").unwrap();
             };
         }
 
@@ -361,7 +361,7 @@ impl<'o, O: Output + ?Sized, U> BasicReporter<'o, O, U> {
                 MetricFmtAdapter::<M>(&max).style(self.format_options.max_style),
                 ")".dimmed(),
             ),
-            ("\n")
+            ("\r\n")
         ];
     }
 }
@@ -371,7 +371,9 @@ where
     O: Output + ?Sized,
     M: Metric,
 {
-    fn top_level_benchmarks<I: Iterator<Item = &'static str> + Clone>(&mut self, _names: I) {}
+    fn top_level_benchmarks<I: Iterator<Item = &'static str> + Clone>(&mut self, _names: I) {
+        prefixed![(self) ++ ("\r\n\r\n")];
+    }
     fn num_iterations(&mut self, iterations: usize) {
         debug_assert!(iterations > 0);
         self.iterations = iterations;
@@ -395,9 +397,9 @@ where
             self.format_options.single_box_style,
             self.format_options.top_level_bench_name_style,
         );
-        prefixed![(self) <- ("\n")];
+        prefixed![(self) <- ("\r\n")];
         prefixed![(self) <- (
-            "{}{}{}\n",
+            "{}{}{}{}{}\r\n",
             "Inputs (".dimmed(),
             self.iterations.style(self.format_options.iteration_count_style),
             " iterations each, measuring ".dimmed(),
@@ -457,7 +459,7 @@ where
                 (" "),
                 ("{: >num_width$}{} ", input_idx + 1, '.'.dimmed(), num_width = input_num_width),
                 ("{}{:?}{}", '`'.dimmed(), input.style(self.format_options.input_style), '`'.dimmed()),
-                ("\n"),
+                ("\r\n"),
             ];
 
             // Next print the stats:
@@ -476,8 +478,8 @@ where
         ));
         self.state = State::WaitingForNextTopLevel;
 
-        prefixed![(self) <- ("\n")];
-        writeln!(self.out, "\n\n").unwrap();
+        prefixed![(self) <- ("\r\n")];
+        prefixed![(self) ++ ("\r\n\r\n")];
     }
 
     fn starting_new_benchmark_suite<I: Iterator<Item = &'static str> + Clone>(
@@ -501,12 +503,14 @@ where
             self.format_options.suite_box_style,
             self.format_options.top_level_bench_name_style,
         );
-        prefixed![(self) <- ("\n")];
+        prefixed![(self) <- ("\r\n")];
         prefixed![(self) <- (
-            "{}{}{}\n",
+            "{}{}{}{}{}\r\n",
             "Inputs (".dimmed(),
             self.iterations.style(self.format_options.iteration_count_style),
-            " iterations each):".dimmed(),
+            " iterations each, measuring ".dimmed(),
+            M::UNIT_NAME.style(self.format_options.unit_style),
+            ")".dimmed(),
         )];
     }
 
@@ -522,7 +526,7 @@ where
         use State::*;
 
         // First, handle the case where we just started a new input in the suite:
-        match self.state {
+    match self.state {
             WaitingForNextInputInSuite {
                 suite_size,
                 benchmark_name_max_width,
@@ -542,7 +546,7 @@ where
                     (" "),
                     ("{: >num_width$}{} ", input_idx + 1, '.'.dimmed(), num_width = input_num_width),
                     ("{}{:?}{}", '`'.dimmed(), input.style(self.format_options.input_style), '`'.dimmed()),
-                    ("\n"),
+                    ("\r\n"),
                 ];
             }
             SuiteWaitingForNextBenchmarkForInput { .. } | RunningBenchmarkInSuite { .. } => {
@@ -655,8 +659,8 @@ where
         ));
         self.state = State::WaitingForNextTopLevel;
 
-        prefixed![(self) <- ("\n")];
-        writeln!(self.out, "\n\n").unwrap();
+        prefixed![(self) <- ("\r\n")];
+        prefixed![(self) ++ ("\r\n\r\n")];
     }
 
     fn ended(&mut self) {
