@@ -1,0 +1,29 @@
+[package]
+name = "ubench-embedded-example-tm4c"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "lib.rs"
+bench = false
+
+[[bench]]
+name = "bench"
+path = "bench.rs"
+harness = false
+test = false
+bench = true
+
+[dependencies]
+libm = "0.2"
+
+# Normally this would be a dev-dep too.
+ubench = { path = "../../", features = ["cortex-m"] }
+
+[dev-dependencies]
+cortex-m = "0.7"
+cortex-m-rt = "0.6"
+cortex-m-semihosting = "0.5"
+panic-halt = "0.2.0"
+tm4c123x-hal = { version = "0.10", features = ["rt"] }

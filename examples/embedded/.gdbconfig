@@ -1,0 +1,15 @@
+target remote | openocd -c 'source [find board/ti_ek-tm4c123gxl.cfg]' -c 'gdb_port pipe; log_output target/openocd.log'
+
+break main
+monitor arm semihosting enable
+load
+
+set print pretty on
+set print asm-demangle on
+
+# detect unhandled exceptions, hard faults and panics
+break UserHardFault
+break rust_begin_unwind
+break main
+
+stepi
