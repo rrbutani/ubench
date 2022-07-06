@@ -91,6 +91,11 @@ macro_rules! feature_gated {
 }
 
 mod io;
+
+mod basic;
+pub use basic::*;
+// feature_gated![basic gated with: any(feature = "embedded-hal", feature = "std")];
+
 // host side only, has:
 //   - pretty curved unicode table things (border colored on type)
 //   - single:
@@ -133,4 +138,4 @@ pub struct JsonToReporterAdapter;
 
 // device side, gated on `embedded-hal`; accepts
 // embedded_hal::serial::Write | std::io::Write
-pub struct BasicReporter;
+// pub struct BasicReporter;
