@@ -6,6 +6,9 @@ rust-version = "1.62.0"
 
 [dependencies]
 
+owo-colors = "3.4"
+unicode-width = { version = "0.1", optional = true } # For better aligned output
+
 # For `Metric` impls:
 cortex-m = { version = "0.7", optional = true }
 riscv = { version = "0.8", optional = true }
@@ -13,21 +16,27 @@ embedded-time = { version = "0.12", optional = true }
 
 # For `Reporter` impls:
 embedded-hal = { version = "0.2", optional = true }
+nb = { version = "1", optional = true }
 serde = { version = "1", default-features = false, features = ["derive"], optional = true }
 
 [features]
 default = ["embedded-hal", "json"]
 
-std = ["serde?/std"] # Gates both `Metric` and `Reporter` impls
+all = ["std", "metrics", "reporters"]
+
+std = ["serde?/std", "owo-colors/supports-colors", "unicode-width"] # Gates both `Metric` and `Reporter` impls
+unicode-width = ["dep:unicode-width"]
 
 # For `Metric` impls:
 cortex-m = ["dep:cortex-m"]
 riscv = ["dep:riscv"]
 embedded-time = ["dep:embedded-time"] # generic; `embedded-time::Clock` based
+metrics = ["cortex-m", "riscv", "embedded-time"]
 
 # For `Reporter` impls:
-embedded-hal = ["dep:embedded-hal"]
+embedded-hal = ["dep:embedded-hal", "dep:nb"]
 json = ["dep:serde"]
+reporters = ["embedded-hal", "json"]
 
 [package.metadata.docs.rs]
 targets = [""]

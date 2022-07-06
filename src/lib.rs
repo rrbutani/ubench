@@ -21,6 +21,8 @@ mod tests {
     extern crate std;
     use std::{fmt::Debug, any::Any};
     use super::*;
+    use metrics::*;
+    use reporters::*;
 
     fn foo(_i: &i32) {}
 

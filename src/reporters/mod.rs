@@ -75,6 +75,20 @@ pub struct NoOpReporter;
 
 impl<M: Metric> Reporter<M> for NoOpReporter {}
 
+macro_rules! feature_gated {
+    ($mod_name:ident gated with: $($cfg_expr:tt)*) => {
+        #[cfg( $($cfg_expr)* )]
+        #[cfg_attr(all(docs, not(doctest)), doc(cfg( $($cfg_expr)* )))]
+        mod $mod_name;
+
+        #[cfg( $($cfg_expr)* )]
+        pub use $mod_name::*;
+    };
+
+    ($mod_name:ident gated on $($features:literal),+) => {
+        feature_gated![$mod_name gated with: all( $(feature = $features),+ )];
+    };
+}
 
 mod io;
 // host side only, has:
