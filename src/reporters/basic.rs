@@ -84,6 +84,7 @@ pub struct FormatOptions {
     pub iteration_count_style: Style,
     pub top_level_bench_name_style: Style,
     pub input_style: Style,
+    pub unit_style: Style,
     pub avg_style: Style,
     pub range_style: Style,
     pub min_style: Style,
@@ -102,6 +103,7 @@ impl Default for FormatOptions {
             iteration_count_style: Style::new(),
             top_level_bench_name_style: Style::new().bold(),
             input_style: Style::new().magenta(),
+            unit_style: Style::new().bold(),
             avg_style: Style::new().green().bold(),
             range_style: Style::new().dimmed(),
             min_style: Style::new().yellow(),
@@ -399,7 +401,9 @@ where
             "{}{}{}\n",
             "Inputs (".dimmed(),
             self.iterations.style(self.format_options.iteration_count_style),
-            " iterations each):".dimmed(),
+            " iterations each, measuring ".dimmed(),
+            M::UNIT_NAME.style(self.format_options.unit_style),
+            ")".dimmed(),
         )];
     }
 
