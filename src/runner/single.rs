@@ -45,10 +45,9 @@ where
             for it_idx in 0..iterations {
                 this.benchmark.setup(&inp);
                 let before = m.start();
-                #[allow(clippy::unit_arg)]
-                black_box(this.benchmark.run(black_box(&inp)));
+                let res = black_box(this.benchmark.run(black_box(&inp)));
                 let measurement = m.end(before);
-                this.benchmark.teardown();
+                this.benchmark.teardown(&inp, res);
 
                 r.single_benchmark_run(inp_idx, &inp, it_idx, measurement);
             }
