@@ -16,7 +16,6 @@ pub use metrics::Metric;
 pub mod reporters;
 pub use reporters::Reporter;
 
-
 #[cfg(test)]
 #[path = "../examples/common/fib.rs"]
 mod fib;
@@ -24,7 +23,6 @@ mod fib;
 #[cfg(test)]
 #[path = "../examples/common/fib_memoized.rs"]
 mod fib_memoized;
-
 
 #[cfg(test)]
 mod tests {
@@ -90,18 +88,7 @@ mod tests {
     #[test]
     #[cfg(feature = "std")]
     fn fibonacci_example() {
-        // use std::collections::HashMap;
-        // use std::vec::Vec;
-
         use super::{fib::*, fib_memoized::*};
-
-        // use once_cell::sync::Lazy;
-
-        // static ANS: Lazy<Vec<u64>> = Lazy::new(|| {
-        //     const LIM: u64 = 90;
-        //     let mut cache = HashMap::<u64, u64>::with_capacity(LIM as usize);
-        //     (0..LIM).map(|i| memoized(i, &mut cache)).collect()
-        // });
 
         let mut out = std::io::stderr();
         let mut m = StdSysTime;
@@ -115,11 +102,8 @@ mod tests {
                     .add("recursive", Recursive)
                     .add("memoized", Memoized::default())
                     .add("iterative", Iterative)
-                    .add("closed form", ClosedForm)
+                    .add("closed form", ClosedForm),
             )
             .run(&mut m, &mut r);
-
-        // dbg!(&ANS);
-        // assert!(false);
     }
 }

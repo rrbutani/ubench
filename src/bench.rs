@@ -1,8 +1,4 @@
-
-use core::{
-    any::Any,
-    fmt::Debug,
-};
+use core::{any::Any, fmt::Debug};
 
 #[allow(unused_variables)]
 pub trait Benchmark<Inp: Any + Debug> {

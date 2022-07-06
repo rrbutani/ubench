@@ -1,12 +1,7 @@
+use core::{any::Any, fmt::Debug, marker::PhantomData};
 
-use core::{
-    any::Any,
-    fmt::Debug,
-    marker::PhantomData,
-};
-
+use super::{black_box, RunnableBenchmarkList};
 use crate::{Benchmark, Metric, Reporter};
-use super::{RunnableBenchmarkList, black_box};
 
 pub fn build_single<B: Benchmark<Inp>, Inp: Any + Debug, I: IntoIterator<Item = Inp>>(
     name: &'static str,

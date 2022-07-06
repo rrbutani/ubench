@@ -526,7 +526,7 @@ where
         use State::*;
 
         // First, handle the case where we just started a new input in the suite:
-    match self.state {
+        match self.state {
             WaitingForNextInputInSuite {
                 suite_size,
                 benchmark_name_max_width,

@@ -1,4 +1,3 @@
-
 use super::{Metric, Reporter};
 
 mod support;

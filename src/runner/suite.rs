@@ -1,13 +1,7 @@
+use core::{any::Any, fmt::Debug, marker::PhantomData};
 
-use core::{
-    any::Any,
-    fmt::Debug,
-    marker::PhantomData,
-};
-
+use super::{black_box, HListIterator, RunnableBenchmarkList};
 use crate::{Benchmark, Metric, Reporter};
-use super::{HListIterator, RunnableBenchmarkList, black_box};
-
 
 pub fn build_suite<Inp: Debug, I: IntoIterator<Item = Inp>>(
     name: &'static str,
@@ -28,7 +22,9 @@ pub struct Suite<Inp: Debug, I: IntoIterator<Item = Inp>, L: RunnableSuiteBenchm
     _p: PhantomData<Inp>,
 }
 
-impl<Inp: Any + Debug, I: IntoIterator<Item = Inp>, L: RunnableSuiteBenchmarkList<Inp>> Suite<Inp, I, L> {
+impl<Inp: Any + Debug, I: IntoIterator<Item = Inp>, L: RunnableSuiteBenchmarkList<Inp>>
+    Suite<Inp, I, L>
+{
     pub fn add<B: Benchmark<Inp>>(
         self,
         name: &'static str,

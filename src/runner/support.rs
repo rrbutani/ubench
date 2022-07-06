@@ -1,4 +1,3 @@
-
 #[derive(Debug, Copy)]
 #[doc(hidden)]
 pub struct HListIterator<'a, Inner: ?Sized>(pub &'a Inner);

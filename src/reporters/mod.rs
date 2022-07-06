@@ -1,4 +1,3 @@
-
 use core::fmt::Debug;
 
 use crate::Metric;
@@ -130,7 +129,6 @@ pub use basic::*;
 //
 // accepts embedded_hal::serial::Write | std::io::Write (todo: trait to unify these)
 pub struct JsonReporter;
-
 
 // host side, takes an `io::Read`, deserializes it as JSON, feeds it to a
 // Reporter (defaults to `PrettyPrintAdapter`)

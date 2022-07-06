@@ -1,0 +1,20 @@
+[package]
+name = "ubench-host-example"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "lib.rs"
+bench = true
+
+[[bench]]
+name = "bench"
+path = "bench.rs"
+harness = false
+
+[dependencies]
+libm = "0.2"
+
+# Normally this would be a dev-dep too.
+ubench = { path = "../../", features = ["std"] }

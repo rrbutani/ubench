@@ -1,4 +1,3 @@
-
 use core::{
     fmt::{self, Debug},
     ops::{Add, Div, Sub},
@@ -12,6 +11,7 @@ pub trait Metric {
         + Div<Self::Divisor, Output = Self::Unit>
         + Debug
         + Copy;
+    #[rustfmt::skip] // `rustfmt` likes to eat this comment :(
     type Divisor: TryFrom<usize> /* = Self::Unit */;
     type Start;
 
@@ -43,8 +43,10 @@ impl Metric for NoOpMetric {
     type Start = ();
     type Divisor = u32;
 
-    fn start(&mut self) { }
-    fn end(&mut self, (): ()) -> u32 { 1 }
+    fn start(&mut self) {}
+    fn end(&mut self, (): ()) -> u32 {
+        1
+    }
 }
 
 macro_rules! feature_gated {
