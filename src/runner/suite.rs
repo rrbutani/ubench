@@ -62,7 +62,7 @@ pub struct SuiteMember<B: Benchmark<Inp>, Inp: Any + Debug> {
 // benchmark suite).
 #[allow(clippy::len_without_is_empty)]
 pub trait RunnableSuiteBenchmarkList<Inp: Debug> {
-    fn run<M: Metric, R: Reporter<M::Unit>>(
+    fn run<M: Metric, R: Reporter<M>>(
         &mut self,
         m: &mut M,
         r: &mut R,
@@ -79,7 +79,7 @@ pub trait RunnableSuiteBenchmarkList<Inp: Debug> {
 }
 
 impl<I: Debug> RunnableSuiteBenchmarkList<I> for () {
-    fn run<M: Metric, R: Reporter<M::Unit>>(
+    fn run<M: Metric, R: Reporter<M>>(
         &mut self,
         _m: &mut M,
         _r: &mut R,
@@ -114,7 +114,7 @@ where
     B: Benchmark<I>,
     Rest: RunnableSuiteBenchmarkList<I>,
 {
-    fn run<M: Metric, R: Reporter<M::Unit>>(
+    fn run<M: Metric, R: Reporter<M>>(
         &mut self,
         m: &mut M,
         r: &mut R,
@@ -156,7 +156,7 @@ where
     Rest: RunnableBenchmarkList,
     for<'a> HListIterator<'a, dyn RunnableSuiteBenchmarkList<Inp> + 'a>: Clone,
 {
-    fn run<M: Metric, R: Reporter<M::Unit>>(self, m: &mut M, r: &mut R, iterations: usize) {
+    fn run<M: Metric, R: Reporter<M>>(self, m: &mut M, r: &mut R, iterations: usize) {
         let (mut this, rest) = self;
 
         let inputs = this.inputs.into_iter();

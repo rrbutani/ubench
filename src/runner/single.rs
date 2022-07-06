@@ -35,7 +35,7 @@ where
     I: IntoIterator<Item = Inp>,
     Rest: RunnableBenchmarkList,
 {
-    fn run<M: Metric, R: Reporter<M::Unit>>(self, m: &mut M, r: &mut R, iterations: usize) {
+    fn run<M: Metric, R: Reporter<M>>(self, m: &mut M, r: &mut R, iterations: usize) {
         let (mut this, rest) = self;
 
         let inputs = this.inputs.into_iter();

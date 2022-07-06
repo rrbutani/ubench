@@ -1,8 +1,10 @@
 
 use core::fmt::Debug;
 
+use crate::Metric;
+
 #[allow(unused_variables)]
-pub trait Reporter<Unit> {
+pub trait Reporter<M: Metric> {
     fn top_level_benchmarks<I: Iterator<Item = &'static str> + Clone>(&mut self, names: I) {}
     fn num_iterations(&mut self, iterations: usize) {}
 
@@ -27,7 +29,7 @@ pub trait Reporter<Unit> {
         input_idx: usize,
         input: &dyn Debug,
         iteration_idx: usize,
-        measurement: Unit,
+        measurement: M::Unit,
     ) {
     }
     fn ending_single_benchmark(&mut self, name: &'static str) {}
@@ -60,7 +62,7 @@ pub trait Reporter<Unit> {
         benchmark_idx: usize,
         benchmark_name: &'static str,
         iteration_idx: usize,
-        measurement: Unit,
+        measurement: M::Unit,
     ) {
     }
     fn ending_benchmark_suite(&mut self, name: &'static str) {}
@@ -71,7 +73,8 @@ pub trait Reporter<Unit> {
 /// A placeholder reporter that does nothing.
 pub struct NoOpReporter;
 
-impl<U> Reporter<U> for NoOpReporter {}
+impl<M: Metric> Reporter<M> for NoOpReporter {}
+
 
 mod io;
 // host side only, has:

@@ -51,7 +51,7 @@ impl<L: RunnableBenchmarkList> BenchmarkRunner<L> {
         }
     }
 
-    pub fn run<M: Metric, R: Reporter<M::Unit>>(self, metric: &mut M, reporter: &mut R)
+    pub fn run<M: Metric, R: Reporter<M>>(self, metric: &mut M, reporter: &mut R)
     where
         for<'a> HListIterator<'a, dyn RunnableBenchmarkList + 'a>: Clone,
     {
@@ -66,7 +66,7 @@ impl<L: RunnableBenchmarkList> BenchmarkRunner<L> {
 
 #[allow(clippy::len_without_is_empty)]
 pub trait RunnableBenchmarkList {
-    fn run<M: Metric, R: Reporter<M::Unit>>(self, m: &mut M, r: &mut R, iterations: usize)
+    fn run<M: Metric, R: Reporter<M>>(self, m: &mut M, r: &mut R, iterations: usize)
     where
         Self: Sized;
 
@@ -102,7 +102,7 @@ impl<'a> Iterator for HListIterator<'a, (dyn RunnableBenchmarkList + 'a)> {
 }
 
 impl RunnableBenchmarkList for () {
-    fn run<M: Metric, R: Reporter<M::Unit>>(self, _m: &mut M, _r: &mut R, _iterations: usize) {}
+    fn run<M: Metric, R: Reporter<M>>(self, _m: &mut M, _r: &mut R, _iterations: usize) {}
 
     fn name_and_next(&self) -> Option<(&'static str, &dyn RunnableBenchmarkList)> {
         None
