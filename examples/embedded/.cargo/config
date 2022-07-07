@@ -9,6 +9,38 @@ rustflags = [
 # target = "thumbv7em-none-eabihf"
 
 [alias]
+# `x` uses `bench` because it seems to be the most versatile:
+# supports `--bin`, `--example`, `--test`, `--bench`
+x = "bench --profile dev --target thumbv7em-none-eabihf"
+
 r = "run --release --target thumbv7em-none-eabihf"
 b = "build --release --target thumbv7em-none-eabihf"
+t = "test --target thumbv7em-none-eabihf -- --test"
+tr = "test --target thumbv7em-none-eabihf --release -- --test"
+d = "run --profile dev --target thumbv7em-none-eabihf -- --debug"
+f = "r -- --flash"
 ben = "bench --target thumbv7em-none-eabihf"
+ben-rep = "bench --target thumbv7em-none-eabihf -- --report"
+bench-report = "ben-rep"
+
+# Unfortunately things like:
+# `cargo f --bin foo`
+# `cargo d --test foo`
+# `cargo t --test foo`
+#
+# don't work; instead you have to do:
+# `cargo x --bin foo -- --flash`
+# `cargo x --test foo -- --debug`
+# `cargo ben --test foo -- --test`
+#
+# In general:
+# `r` supports `--bin`, `--example`
+# `ben` supports `--test`, `--bench`, `--bin`, `--example`
+# because `run` and `debug` modes can be inferred from context (or
+# in the case of `debug`: includes a `cargo` provided flag)
+#
+# This is not true for `flash`, `test`, and `debug` which is why
+# there's a discrepancy.
+
+flash = "f"
+debug = "d"

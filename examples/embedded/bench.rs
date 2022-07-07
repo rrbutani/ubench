@@ -4,13 +4,17 @@
 #[cfg(not(target_arch = "arm"))]
 compile_error!("please pass --target thumbv7em-none-eabihf or use the aliases!");
 
-use panic_halt as _;
+use core::fmt::Write;
 
 use cortex_m_rt::entry;
 use tm4c123x_hal::{self as hal, prelude::*};
+use panic_write::PanicHandler;
 
 use ubench::{metrics::*, reporters::*, *};
 use ubench_embedded_example_tm4c::*;
+
+const PANIC_DELIM: &str = "++++++++++";
+const END_DELIM: &str = "==========";
 
 #[entry]
 fn main() -> ! {
@@ -24,7 +28,7 @@ fn main() -> ! {
 
     // Activate UART
     let mut porta = p.GPIO_PORTA.split(&sc.power_control);
-    let mut uart = hal::serial::Serial::uart0(
+    let uart = hal::serial::Serial::uart0(
         p.UART0,
         porta
             .pa1
@@ -40,19 +44,31 @@ fn main() -> ! {
         &sc.power_control,
     );
 
+    // PanicHandler:
+    let mut uart = PanicHandler::new_with_hook(
+        uart,
+        |w, panic_info| {
+            writeln!(w, "\n{}", PANIC_DELIM).unwrap();
+            writeln!(w, "{panic_info}").unwrap();
+            writeln!(w, "{}", PANIC_DELIM).unwrap();
+        }
+    );
+
     let mut core_p = hal::CorePeripherals::take().unwrap();
     let mut m = CortexMCycleCount::new(&mut core_p.DWT, &mut core_p.DCB).unwrap();
-    let mut r = BasicReporter::new_with_serial::<u8, _, _>(&mut uart);
+    let mut r = BasicReporter::new_with_serial::<u8, _, _>(&mut *uart);
 
     BenchmarkRunner::new()
         .set_iterations(20)
         .add(
-            suite("fibonacci comparison", (0..36).step_by(5))
+            suite("fibonacci comparison", (0..29).step_by(5))
                 .add("recursive", Recursive)
                 .add("iterative", Iterative)
                 .add("closed form", ClosedForm),
         )
         .run(&mut m, &mut r);
+
+    writeln!(uart, "\n{}", END_DELIM).unwrap();
 
     loop {}
 }

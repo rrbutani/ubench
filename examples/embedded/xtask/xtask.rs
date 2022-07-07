@@ -1,12 +1,21 @@
 #![allow(unused_imports, unreachable_code)]
-use std::{env, fs, path::{Path, PathBuf}, io::{self, BufReader, BufRead, Read, Write}, time::Duration};
+use std::{
+    env, fs,
+    io::{self, BufRead, BufReader, Read, Write},
+    path::{Path, PathBuf},
+    time::Duration,
+    sync::mpsc,
+};
 
 use crossbeam_utils::thread;
-use downloader::{Downloader, Download};
+use downloader::{Download, Downloader};
 use owo_colors::OwoColorize;
-use serialport::{ClearBuffer, DataBits, FlowControl, Parity, StopBits, SerialPort, SerialPortInfo, SerialPortType, UsbPortInfo};
-use xshell::{cmd, Shell};
+use serialport::{
+    ClearBuffer, DataBits, FlowControl, Parity, SerialPort, SerialPortInfo, SerialPortType,
+    StopBits, UsbPortInfo,
+};
 use which::which;
+use xshell::{cmd, Shell};
 
 #[derive(Default, Debug)]
 pub enum Mode {
@@ -99,8 +108,7 @@ fn main() -> Result<(), u32> {
 // TODO: support explicitly specifying the device! (once we have an alternative
 // to `lm4flash`)
 fn find_device() -> String {
-    let available_ports = serialport::available_ports()
-        .expect("couldn't detect available device");
+    let available_ports = serialport::available_ports().expect("couldn't detect available device");
     let found_port = available_ports
         .into_iter()
         .filter(|p| {
@@ -136,13 +144,7 @@ fn find_llvm_objcopy(sh: &Shell) -> PathBuf {
     let sysroot = cmd!(sh, "{RUSTC} --print sysroot").read().unwrap();
 
     let mut llvm_objcopy_path = PathBuf::from(sysroot);
-    llvm_objcopy_path.extend([
-        "lib",
-        "rustlib",
-        HOST_TRIPLE,
-        "bin",
-        "llvm-objcopy",
-    ]);
+    llvm_objcopy_path.extend(["lib", "rustlib", HOST_TRIPLE, "bin", "llvm-objcopy"]);
 
     // Check that this absolute path exists and is executable:
     match which(llvm_objcopy_path) {
@@ -161,7 +163,10 @@ fn find_llvm_objcopy(sh: &Shell) -> PathBuf {
                 panic!("Could not find an `objcopy` to use; see above!");
             };
 
-            eprintln!("\nFound `{}`; using in lieu of a sysroot provided `llvm-objcopy`.", alt.display());
+            eprintln!(
+                "\nFound `{}`; using in lieu of a sysroot provided `llvm-objcopy`.",
+                alt.display()
+            );
             alt
         }
     }
@@ -178,13 +183,13 @@ fn find_or_get_lm4flash(sh: &Shell) -> PathBuf {
     // First: check $PATH.
     let bin_name = format!("lm4flash{}", env::consts::EXE_SUFFIX);
     if let Ok(p) = which(&bin_name) {
-        return p
+        return p;
     }
 
     // Next: check the artifact dir.
     let bin_path = Path::new(XTASK_ARTIFACT_DIR).join(&bin_name);
     if let Ok(p) = which(&bin_path) {
-        return p
+        return p;
     }
 
     // Last: download it.
@@ -215,9 +220,11 @@ fn find_or_get_lm4flash(sh: &Shell) -> PathBuf {
         .build()
         .unwrap();
     d.download(&[
-        Download::new(&format!("{}/{}", DOWNLOAD_PREFIX, suffix))
-            .file_name(Path::new(&bin_name))
-    ]).unwrap()[0].as_ref().unwrap();
+        Download::new(&format!("{}/{}", DOWNLOAD_PREFIX, suffix)).file_name(Path::new(&bin_name))
+    ])
+    .unwrap()[0]
+        .as_ref()
+        .unwrap();
 
     // Set permissions:
     if cfg!(unix) {
@@ -235,15 +242,20 @@ fn find_or_get_lm4flash(sh: &Shell) -> PathBuf {
         if let Ok(codesign) = which("codesign") {
             cmd!(sh, "{codesign} -s - -f {bin_path}").run().unwrap();
         } else {
-            eprintln!("
+            eprintln!(
+                "
                 Could not find the `codesign` tool in $PATH!! Hopefully this just \
                 means your macOS version does not require codesigning.
-            ");
+            "
+            );
         }
     }
 
     // Finally try to run the binary:
-    cmd!(sh, "{bin_path} -V").quiet().run().expect("a working `lm4flash` binary");
+    cmd!(sh, "{bin_path} -V")
+        .quiet()
+        .run()
+        .expect("a working `lm4flash` binary");
 
     bin_path
 }
@@ -259,8 +271,15 @@ fn flash_program(sh: &Shell, elf_binary: &Path, _device_port: &str) {
         p.join(format!("{:?}.axf", f))
     };
 
-    cmd!(sh, "{objcopy} -O binary {elf_binary} {axf_bin_path}").quiet().run().unwrap();
-    cmd!(sh, "{lm4flash} -E -v {axf_bin_path}").quiet().ignore_stdout().run().unwrap()
+    cmd!(sh, "{objcopy} -O binary {elf_binary} {axf_bin_path}")
+        .quiet()
+        .run()
+        .unwrap();
+    cmd!(sh, "{lm4flash} -E -v {axf_bin_path}")
+        .quiet()
+        .ignore_stdout()
+        .run()
+        .unwrap()
 }
 
 impl Mode {
@@ -273,7 +292,13 @@ impl Mode {
             Mode::Debug => "Debugging",
         };
 
-        eprintln!("{:>12} {:?} {} {}", verb.green().bold(), bin.file_name().unwrap(), "on".dimmed(), dev.bold());
+        eprintln!(
+            "{:>12} {:?} {} {}",
+            verb.green().bold(),
+            bin.file_name().unwrap(),
+            "on".dimmed(),
+            dev.bold()
+        );
     }
 
     fn run(&self, bin: PathBuf) -> Result<(), u32> {
@@ -298,13 +323,35 @@ impl Mode {
             .flow_control(FlowControl::None)
             .parity(Parity::None)
             .stop_bits(StopBits::One)
-            .timeout(Duration::from_secs(30))
-            .open_native().unwrap();
+            .timeout(Duration::from_secs(60 * 3)) // todo: make timeout adjustable (env var, flag)
+            .open_native()
+            .unwrap();
 
         // Start up `lm4flash`:
         thread::scope(|s| {
+            let (tx, rx) = mpsc::channel();
+            s.spawn(move |_| {
+                eprint!(
+                    "{:>12} ",
+                    "Programming".green().bold(),
+                );
+                let mut count = 13;
+
+                while let Err(_) = rx.try_recv() {
+                    eprint!("{}", '.'.dimmed());
+                    count += 1;
+
+                    std::thread::sleep(Duration::from_millis(500));
+                }
+
+                eprint!("\r");
+                for _ in 0..count { eprint!(" "); }
+                eprint!("\r");
+            });
+
             s.spawn(move |_| {
                 flash_program(&sh, &bin, &dev_path);
+                tx.send(()).unwrap();
             });
 
             // wait a little bit:
@@ -312,17 +359,19 @@ impl Mode {
 
             // clear the buffer:
             dev.clear(ClearBuffer::All).unwrap();
-        }).unwrap();
+        })
+        .unwrap();
 
         if let Mode::Flash = self {
-            return Ok(())
+            return Ok(());
         }
         if let Mode::Debug = self {
             // exec into gdb, etc.
+            // (skip flashing too!)
             todo!()
         }
 
-        if let Mode::Run | Mode::Bench = self {
+        if let Mode::Run = self {
             // Show serial output.
             // let monitor = env::var("SERIAL_MONITOR").unwrap_or("picocom")
 
@@ -332,12 +381,15 @@ impl Mode {
 
             // Otherwise, warn and drop into this output only
             // facsimile.
-            eprintln!("{}", "`picocom` not found, using built-in output-only monitor".yellow());
+            eprintln!(
+                "{}",
+                "`picocom` not found, using built-in output-only monitor".yellow()
+            );
 
             let mut out = io::stdout();
             loop {
                 match io::copy(&mut dev, &mut out) {
-                    Ok(_) => {},
+                    Ok(_) => {}
                     Err(err) => eprintln!("error: {err:?}"),
                 }
             }
@@ -361,19 +413,100 @@ impl Mode {
         //     buf.clear();
         // }
 
-        // fn process(inp: &mut impl Read, sink: &mut impl Write, chk: impl FnMut(&s))
+        enum Choice {
+            SendToOutput,
+            OmitFromOutput,
+            Break,
+        }
+        fn process<E>(
+            inp: &mut impl Read,
+            sink: &mut impl Write,
+            mut line_func: impl FnMut(&str) -> Result<Choice, E>,
+        ) -> Result<(), E> {
+            use Choice::*;
+
+            let mut inp = BufReader::new(inp);
+            let mut buf = String::new();
+            loop {
+                inp.read_line(&mut buf).unwrap();
+                match line_func(&buf)? {
+                    SendToOutput => sink.write_all(buf.as_bytes()).unwrap(),
+                    Break => break,
+                    OmitFromOutput => {}
+                }
+
+                buf.clear();
+            }
+
+            Ok(())
+        }
+
+        let mut err_buf = String::new();
+        let mut panicked = false;
+        let watch_for_panics_and_ends = move |line: &str| -> Result<Choice, String> {
+            const PANIC_DELIM: &str = "++++++++++";
+            const END_DELIM: &str = "==========";
+            let s = line.trim_end();
+            if panicked {
+                if s == PANIC_DELIM {
+                    // TODO: return a better error type, etc.
+                    return Err(format!(
+                        "{}\n{}\n",
+                        "Embedded device panicked! Got:".dimmed(),
+                        err_buf.bold()
+                    ));
+                }
+
+                err_buf.push_str(line);
+                return Ok(Choice::OmitFromOutput);
+            }
+
+            if s == PANIC_DELIM {
+                panicked = true;
+                Ok(Choice::OmitFromOutput)
+            } else if s == END_DELIM {
+                Ok(Choice::Break)
+            } else {
+                Ok(Choice::SendToOutput)
+            }
+        };
+
+        fn crash(a: Result<(), String>) -> Result<(), u32> {
+            match a {
+                Ok(()) => Ok(()),
+                Err(m) => {
+                    eprintln!("{}:\n{m}", "Error".red().bold());
+                    Err(3)
+                }
+            }
+        }
 
         match self {
             Mode::Bench => {
                 // Attach a console but be looking to grab the
                 // benchmarking output for post processing if the
                 // flags say to do so.
-                todo!()
-            },
+                if false {
+                    // post processing mode:
+                    todo!()
+                } else {
+                    // TODO: replace this with the JSON thing once we
+                    // get to doing that.
+                    crash(process(
+                        &mut dev,
+                        &mut io::stdout(),
+                        watch_for_panics_and_ends,
+                    ))
+                }
+            }
             Mode::Test => {
                 // Like `Bench` but different post processing.
-                todo!()
-            },
+                crash(process(
+                    &mut dev,
+                    &mut io::stdout(),
+                    watch_for_panics_and_ends,
+                ))
+            }
             Mode::Run => unreachable!(),
             Mode::Debug => unreachable!(),
             Mode::Flash => unreachable!(),

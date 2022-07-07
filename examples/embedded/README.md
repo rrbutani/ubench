@@ -1,2 +1,4 @@
 
-`picocom -b 115200 /dev/... -q`
+`picocom -b 1500000 /dev/... -q`
+
+todo!

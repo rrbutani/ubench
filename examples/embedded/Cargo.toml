@@ -23,13 +23,29 @@ bench = true
 
 [dependencies]
 libm = "0.2"
+cortex-m = "0.7"
+cortex-m-rt = "0.6"
+panic-write = { git = "https://github.com/rrbutani/panic-write.git" }
+tm4c123x-hal = { version = "0.10", features = ["rt"] }
 
-# Normally this would be a dev-dep too.
+# Normally this would be a dev-dep.
 ubench = { path = "../../", features = ["cortex-m"] }
 
 [dev-dependencies]
-cortex-m = "0.7"
-cortex-m-rt = "0.6"
-cortex-m-semihosting = "0.5"
-panic-halt = "0.2.0"
-tm4c123x-hal = { version = "0.10", features = ["rt"] }
+
+[profile.dev] # and also `profile.test`
+opt-level = 1
+debug = true
+lto = "thin"
+overflow-checks = true
+debug-assertions = true
+incremental = true
+
+[profile.release] # and also `profile.bench`
+opt-level = 3 # or "z"
+debug = true
+lto = "fat"
+overflow-checks = false
+debug-assertions = false
+incremental = false
+codegen-units = 1
