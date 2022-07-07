@@ -141,6 +141,9 @@ fn find_llvm_objcopy(sh: &Shell) -> PathBuf {
     //
     // should work with nix and rustup
 
+    // rustup provides `llvm-objcopy` in addition to `llvm-objcopy.exe` on
+    // Windows so we don't need special handling in the path logic below.
+
     let sysroot = cmd!(sh, "{RUSTC} --print sysroot").read().unwrap();
 
     let mut llvm_objcopy_path = PathBuf::from(sysroot);
@@ -155,13 +158,22 @@ fn find_llvm_objcopy(sh: &Shell) -> PathBuf {
             eprintln!("(this should be handled by the `rust-toolchain.toml` already)");
             eprintln!("\nSearching $PATH instead...");
 
-            let alt = if let Ok(p) = which("llvm-objcopy") {
-                p
-            } else if let Ok(p) = which("arm-none-eabi-objcopy") {
-                p
-            } else {
-                panic!("Could not find an `objcopy` to use; see above!");
-            };
+            let mut alternates = vec![
+                "llvm-objcopy".to_string(),
+                "arm-none-eabi-objcopy".to_string(),
+            ];
+
+            if cfg!(windows) {
+                for i in alternates.clone() {
+                    alternates.push(format!("{i}{}", env::consts::EXE_SUFFIX));
+                }
+            }
+
+            let alt = alternates
+                .into_iter()
+                .filter_map(|n| which(n).ok())
+                .next()
+                .unwrap_or_else(|| panic!("Could not find an `objcopy` to use; see above!"));
 
             eprintln!(
                 "\nFound `{}`; using in lieu of a sysroot provided `llvm-objcopy`.",
