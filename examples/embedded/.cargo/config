@@ -1,5 +1,5 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
-runner = "cargo run -q -p xtask --bin xtask --"
+runner = "cargo run -p xtask --bin xtask --"
 
 rustflags = [
   "-C", "link-arg=-Tlink.x",
@@ -12,6 +12,7 @@ rustflags = [
 # `x` uses `bench` because it seems to be the most versatile:
 # supports `--bin`, `--example`, `--test`, `--bench`
 x = "bench --profile dev --target thumbv7em-none-eabihf"
+xr = "bench --profile release --target thumbv7em-none-eabihf"
 
 r = "run --release --target thumbv7em-none-eabihf"
 b = "build --release --target thumbv7em-none-eabihf"
