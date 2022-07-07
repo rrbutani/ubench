@@ -280,8 +280,8 @@ fn flash_program(sh: &Shell, elf_binary: &Path, _device_port: &str) {
     let objcopy = find_llvm_objcopy(sh);
     let axf_bin_path = {
         let p = elf_binary.parent().unwrap();
-        let f = elf_binary.file_stem().unwrap();
-        p.join(format!("{:?}.axf", f))
+        let f = elf_binary.file_stem().unwrap().to_str().unwrap();
+        p.join(format!("{}.axf", f))
     };
 
     cmd!(sh, "{objcopy} -O binary {elf_binary} {axf_bin_path}")
