@@ -3,7 +3,7 @@ use std::{
     env, fs,
     io::{self, BufRead, BufReader, Read, Write},
     path::{Path, PathBuf},
-    time::Duration,
+    time::{Duration, Instant},
     sync::mpsc,
 };
 
@@ -332,9 +332,10 @@ impl Mode {
         thread::scope(|s| {
             let (tx, rx) = mpsc::channel();
             s.spawn(move |_| {
+                let start = Instant::now();
                 eprint!(
                     "{:>12} ",
-                    "Programming".green().bold(),
+                    "Programming".blue().bold(),
                 );
                 let mut count = 13;
 
@@ -344,10 +345,17 @@ impl Mode {
 
                     std::thread::sleep(Duration::from_millis(500));
                 }
+                let dur = start.elapsed();
 
                 eprint!("\r");
                 for _ in 0..count { eprint!(" "); }
                 eprint!("\r");
+
+                eprintln!(
+                    "{:>12} in {:?}",
+                    "Programmed".blue().bold(),
+                    dur.bold(),
+                );
             });
 
             s.spawn(move |_| {
