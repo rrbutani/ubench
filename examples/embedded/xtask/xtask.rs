@@ -288,11 +288,15 @@ fn flash_program(sh: &Shell, elf_binary: &Path, _device_port: &str) {
         .quiet()
         .run()
         .unwrap();
-    cmd!(sh, "{lm4flash} -E -v {axf_bin_path}")
+    let res = cmd!(sh, "{lm4flash} -E -v {axf_bin_path}")
         .quiet()
         .ignore_stdout()
-        .run()
-        .unwrap()
+        .run();
+
+    if let Err(e) = res {
+        eprintln!("{}:\n{e}\n", "\nError when flashing".red());
+        std::process::exit(4);
+    }
 }
 
 impl Mode {
