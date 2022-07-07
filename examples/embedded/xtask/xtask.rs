@@ -3,7 +3,9 @@ use std::{
     env, fs,
     io::{self, BufRead, BufReader, Read, Write},
     path::{Path, PathBuf},
+    process,
     time::{Duration, Instant},
+    str,
     sync::mpsc,
 };
 
@@ -288,13 +290,28 @@ fn flash_program(sh: &Shell, elf_binary: &Path, _device_port: &str) {
         .quiet()
         .run()
         .unwrap();
-    let res = cmd!(sh, "{lm4flash} -E -v {axf_bin_path}")
+    let mut cmd: process::Command = cmd!(sh, "{lm4flash} -E -v {axf_bin_path}")
         .quiet()
         .ignore_stdout()
-        .run();
+        .into();
+    let res = cmd.output().unwrap();
 
-    if let Err(e) = res {
-        eprintln!("{}:\n{e}\n", "\nError when flashing".red());
+    if !res.status.success() {
+        const ICDI_INSTRUCTIONS_LINK: &str = "https://www.ti.com/lit/ml/spmu287c/spmu287c.pdf";
+        const ICDI_INSTALLATION_LINK: &str = "https://www.ti.com/litv/zip/spmc016a";
+
+        let err = str::from_utf8(&res.stderr).unwrap();
+        eprintln!("{} ({}):\n{err}\n", "\nError when flashing".red(), res.status.bold());
+
+        if cfg!(windows) && err.contains("Unable to find any ICDI devices") {
+            eprintln!(
+                "{}\n\n\t\tDownload link: {}\n\t\tInstructions:  {}",
+                "Have you installed the TI ICDI drivers?".yellow(),
+                ICDI_INSTALLATION_LINK.underline(),
+                ICDI_INSTRUCTIONS_LINK.underline(),
+            );
+        }
+
         std::process::exit(4);
     }
 }
@@ -351,7 +368,7 @@ impl Mode {
                 let start = Instant::now();
                 eprint!(
                     "{:>12} ",
-                    "Programming".blue().bold(),
+                    "Programming".cyan().bold(),
                 );
                 let mut count = 13;
 
@@ -369,7 +386,7 @@ impl Mode {
 
                 eprintln!(
                     "{:>12} in {:?}",
-                    "Programmed".blue().bold(),
+                    "Programmed".green().bold(),
                     dur.bold(),
                 );
             });
