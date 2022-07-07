@@ -33,6 +33,10 @@ const BAUD_RATE: u32 = 1_500_000; // TODO: support grabbing from CLI args
 
 // TODO: use `structopt` or something instead...
 fn main() -> Result<(), u32> {
+    // Since we're not running with `cargo -q`, erase the last three lines of (cargo's) output:
+    for _ in 0..3 { print!("\x1b[A\x1b[K"); }
+    io::stdout().flush().unwrap();
+
     let mut mode = Mode::default();
     let mut bin = None;
 
