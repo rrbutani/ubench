@@ -1,15 +1,16 @@
 use std::{
-    env, fs,
+    env::{self, consts},
+    fs,
     io::{self, BufRead, BufReader, Read, Write},
     path::{Path, PathBuf},
-    process,
-    time::{Duration, Instant},
-    str,
+    process, str,
     sync::mpsc,
+    time::{Duration, Instant},
 };
 
 use crossbeam_utils::thread;
 use downloader::{Download, Downloader};
+use faccess::{AccessMode, PathExt};
 use owo_colors::OwoColorize;
 use serialport::{
     ClearBuffer, DataBits, FlowControl, Parity, SerialPort, SerialPortInfo, SerialPortType,
@@ -35,7 +36,7 @@ fn main() -> Result<(), u32> {
     let mut mode = Mode::default();
     let mut bin = None;
 
-    let mut args = std::env::args().skip(1);
+    let mut args = env::args().skip(1);
     let mut err = false;
     for a in &mut args {
         match &*a {
@@ -109,7 +110,11 @@ fn main() -> Result<(), u32> {
 // TODO: support explicitly specifying the device! (once we have an alternative
 // to `lm4flash`)
 fn find_device() -> String {
+    const UDEV_RULE_HELP: &str =
+        "https://github.com/ut-utp/.github/wiki/Dev-Environment-Setup#udev-rule";
+
     let available_ports = serialport::available_ports().expect("couldn't detect available device");
+    let mut found_ports_without_perms = None;
     let found_port = available_ports
         .into_iter()
         .filter(|p| {
@@ -125,8 +130,62 @@ fn find_device() -> String {
                 }
             )
         })
+        .filter(|p| {
+            // On Linux (and technically also macOS but not in practice) users
+            // may not have permissions to access the TM4C's serial port.
+            //
+            // Additionally, users may have a `udev` rule that creates
+            // _symlinks_ with permissions that permit access but that do not
+            // update the permissions of the original device path, leaving us to
+            // figure out which path we can actually use.
+            if cfg!(unix) {
+                let dev_p = Path::new(&p.port_name);
+                let res = dev_p.access(AccessMode::READ | AccessMode::WRITE).is_ok();
+
+                if !res {
+                    found_ports_without_perms = Some(p.port_name.clone());
+                }
+                res
+            } else {
+                true
+            }
+        })
         .next()
-        .expect("couldn't find a USB Serial device that looks like a TM4C...");
+        .unwrap_or_else(|| {
+            eprintln!(
+                "{}: couldn't find a USB Serial device that looks like a TM4C...\n",
+                "error".red().bold()
+            );
+
+            if let Some(ex) = found_ports_without_perms {
+                eprintln!(
+                    "We found device paths that look like TM4Cs (i.e. `{}`) that you do not have permissions to access.\n",
+                    ex.bold(),
+                );
+                if consts::OS != "macos" && consts::OS != "ios" {
+                    eprintln!(
+                        "Have you installed the {}? Install instructions are here: {}",
+                        "udev rules".yellow(),
+                        UDEV_RULE_HELP.bold(),
+                    );
+                } else {
+                    eprintln!(
+                        "{} `{}{}`{}",
+                        "Maybe try running".yellow(),
+                        "sudo chmod a+rw ".bold(),
+                        ex.bold(),
+                        "?".yellow()
+                    )
+                }
+            } else {
+                eprintln!(
+                    "{}\n",
+                    "Is your board plugged in (top port) and powered on?".yellow()
+                );
+            }
+
+            std::process::exit(6)
+        });
 
     // eprintln!("using USB port: {found_port:#?}");
     found_port.port_name
@@ -166,7 +225,7 @@ fn find_llvm_objcopy(sh: &Shell) -> PathBuf {
 
             if cfg!(windows) {
                 for i in alternates.clone() {
-                    alternates.push(format!("{i}{}", env::consts::EXE_SUFFIX));
+                    alternates.push(format!("{i}{}", consts::EXE_SUFFIX));
                 }
             }
 
@@ -194,7 +253,7 @@ fn find_or_get_lm4flash(sh: &Shell) -> PathBuf {
     // download to our target folder
 
     // First: check $PATH.
-    let bin_name = format!("lm4flash{}", env::consts::EXE_SUFFIX);
+    let bin_name = format!("lm4flash{}", consts::EXE_SUFFIX);
     if let Ok(p) = which(&bin_name) {
         return p;
     }
@@ -207,7 +266,7 @@ fn find_or_get_lm4flash(sh: &Shell) -> PathBuf {
 
     // Last: download it.
     const DOWNLOAD_PREFIX: &'static str = "https://github.com/ut-utp/.github/wiki/assets/binaries/";
-    let suffix = match (env::consts::OS, env::consts::ARCH) {
+    let suffix = match (consts::OS, consts::ARCH) {
         ("macos" | "ios", "x86_64" | "aarch64") => "macos/lm4flash",
         ("linux" | "freebsd" | "dragonfly" | "netbsd" | "openbsd" | "solaris" | "android", arch @ "x86_64" | arch @ "aarch64") => {
             // I think all of these have some degree of binary compatibility with Linux?
@@ -300,7 +359,11 @@ fn flash_program(sh: &Shell, elf_binary: &Path, _device_port: &str) {
         const ICDI_INSTALLATION_LINK: &str = "https://www.ti.com/litv/zip/spmc016a";
 
         let err = str::from_utf8(&res.stderr).unwrap();
-        eprintln!("{} ({}):\n{err}\n", "\nError when flashing".red().bold(), res.status.bold());
+        eprintln!(
+            "{} ({}):\n{err}\n",
+            "\nError when flashing".red().bold(),
+            res.status.bold()
+        );
 
         if cfg!(windows) && err.contains("Unable to find any ICDI devices") {
             eprintln!(
@@ -388,10 +451,7 @@ impl Mode {
             let (tx, rx) = mpsc::channel();
             s.spawn(move |_| {
                 let start = Instant::now();
-                eprint!(
-                    "{:>12} ",
-                    "Programming".cyan().bold(),
-                );
+                eprint!("{:>12} ", "Programming".cyan().bold(),);
                 let mut count = 13;
 
                 while let Err(_) = rx.try_recv() {
@@ -403,14 +463,12 @@ impl Mode {
                 let dur = start.elapsed();
 
                 eprint!("\r");
-                for _ in 0..count { eprint!(" "); }
+                for _ in 0..count {
+                    eprint!(" ");
+                }
                 eprint!("\r");
 
-                eprintln!(
-                    "{:>12} in {:?}",
-                    "Programmed".green().bold(),
-                    dur.bold(),
-                );
+                eprintln!("{:>12} in {:?}", "Programmed".green().bold(), dur.bold(),);
             });
 
             s.spawn(move |_| {
@@ -455,18 +513,25 @@ impl Mode {
                 match io::copy(&mut dev, &mut out) {
                     Ok(_) => {
                         #[cfg(windows)]
-                        { current_timeout_count = 0; }
+                        {
+                            current_timeout_count = 0;
+                        }
                     }
                     // If we're on windows, omit timeout errors, maybe:
                     #[cfg(windows)]
-                    Err(err) if current_timeout_count < timeouts_before_error && err.kind() == io::ErrorKind::TimedOut => {
+                    Err(err)
+                        if current_timeout_count < timeouts_before_error
+                            && err.kind() == io::ErrorKind::TimedOut =>
+                    {
                         current_timeout_count += 1;
-                    },
+                    }
                     Err(err) => {
                         #[cfg(windows)]
-                        { current_timeout_count = 0; }
+                        {
+                            current_timeout_count = 0;
+                        }
                         eprintln!("error: {err:?}")
-                    },
+                    }
                 }
             }
         }
@@ -480,8 +545,7 @@ impl Mode {
             inp: &mut impl Read,
             sink: &mut impl Write,
             mut line_func: impl FnMut(&str) -> Result<Choice, E>,
-            #[cfg(windows)]
-            timeouts_before_error: u128,
+            #[cfg(windows)] timeouts_before_error: u128,
         ) -> Result<(), E> {
             use Choice::*;
 
@@ -556,7 +620,7 @@ impl Mode {
             match a {
                 Ok(()) => Ok(()),
                 Err(m) => {
-                    eprintln!("{}:\n{m}", "Error".red().bold());
+                    eprintln!("{}:\n{m}", "error".red().bold());
                     Err(3)
                 }
             }

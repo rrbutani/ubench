@@ -15,6 +15,7 @@ which = "4.2"
 [dependencies]
 crossbeam-utils = "0.8"
 downloader = { version = "0.2", features = ["tui"] }
+faccess = "0.2"
 owo-colors = "3.4"
 serialport = "4.2"
 xshell = "0.2"
