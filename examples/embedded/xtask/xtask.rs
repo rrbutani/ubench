@@ -477,7 +477,7 @@ impl Mode {
             });
 
             // wait a little bit:
-            std::thread::sleep(Duration::from_millis(80));
+            std::thread::sleep(Duration::from_millis(200));
 
             // clear the buffer:
             dev.clear(ClearBuffer::All).unwrap();
