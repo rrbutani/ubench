@@ -1,13 +1,12 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
-# runner = "gdb -q -x .gdbconfig --"
-runner = "cargo run --bin xtask --"
+runner = "cargo run -q -p xtask --bin xtask --"
 
 rustflags = [
   "-C", "link-arg=-Tlink.x",
 ]
 
-[build]
-target = "thumbv7em-none-eabihf"
+# [build]
+# target = "thumbv7em-none-eabihf"
 
 [alias]
 r = "run --release --target thumbv7em-none-eabihf"

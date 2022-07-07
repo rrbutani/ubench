@@ -1,0 +1,21 @@
+[package]
+name = "xtask"
+version = "0.0.0"
+edition = "2021"
+publish = false
+build = "build.rs"
+
+[[bin]]
+name = "xtask"
+path = "xtask.rs"
+
+[build-dependencies]
+which = "4.2"
+
+[dependencies]
+crossbeam-utils = "0.8"
+downloader = { version = "0.2", features = ["tui"] }
+owo-colors = "3.4"
+serialport = "4.2"
+xshell = "0.2"
+which = "4.2"

@@ -34,7 +34,7 @@ fn main() -> ! {
             .into_af_push_pull::<hal::gpio::AF1>(&mut porta.control),
         (),
         (),
-        115200_u32.bps(),
+        1_500_000_u32.bps(),
         hal::serial::NewlineMode::SwapLFtoCRLF,
         &clocks,
         &sc.power_control,

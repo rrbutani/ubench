@@ -1,3 +1,8 @@
+[workspace]
+members = [
+    "xtask"
+]
+
 [package]
 name = "ubench-embedded-example-tm4c"
 version = "0.0.0"
@@ -7,12 +12,13 @@ publish = false
 [lib]
 path = "lib.rs"
 bench = false
+test = false
 
 [[bench]]
 name = "bench"
 path = "bench.rs"
 harness = false
-test = false
+test = true
 bench = true
 
 [dependencies]
