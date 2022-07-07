@@ -124,7 +124,7 @@ fn find_device() -> String {
                 }
             )
         })
-        .nth(1)
+        .next()
         .expect("couldn't find a USB Serial device that looks like a TM4C...");
 
     // eprintln!("using USB port: {found_port:#?}");
