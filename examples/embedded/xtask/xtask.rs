@@ -227,6 +227,7 @@ fn find_or_get_lm4flash(sh: &Shell) -> PathBuf {
         .unwrap();
 
     // Set permissions:
+    #[cfg(unix)]
     if cfg!(unix) {
         use std::os::unix::fs::PermissionsExt;
 
