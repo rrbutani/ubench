@@ -341,6 +341,9 @@ impl Mode {
 
         let sh = Shell::new().unwrap();
 
+        // TODO: make timeout adjustable (env var, flag)
+        let timeout = Duration::from_secs(60 * 3);
+
         // This is a bit tricky. We want to only see output from the current
         // execution of the program so we want to only start reading from the
         // serial port _after_ `lm4flash` has started.
@@ -357,9 +360,29 @@ impl Mode {
             .flow_control(FlowControl::None)
             .parity(Parity::None)
             .stop_bits(StopBits::One)
-            .timeout(Duration::from_secs(60 * 3)) // todo: make timeout adjustable (env var, flag)
+            .timeout(timeout)
             .open_native()
             .unwrap();
+
+        // On Windows, the timeout also governs how long the OS will hold onto
+        // data in its buffers before giving it to us when:
+        //   - we are only _receiving_ data and are not sending anything
+        //   - the data in the OS' buffers does not exceed its buffer size
+        //
+        // This is suboptimal for our use case (just receiving data) so: on
+        // Windows we set the timeout to be very low *and* make it so that
+        // receiving a `io::ErrorKind::TimedOut` is not an error.
+        //
+        // We actually still _do_ want a timeout (for use in CI and such); on
+        // Windows we reconstruct an approximation of this.
+        #[cfg(windows)]
+        let (mut current_timeout_count, timeouts_before_error) = {
+            let short_timeout = Duration::from_millis(50);
+            dev.set_timeout(short_timeout);
+            let timeouts_before_error = timeout.as_nanos() / short_timeout.as_nanos();
+
+            (0, timeouts_before_error)
+        };
 
         // Start up `lm4flash`:
         thread::scope(|s| {
@@ -431,8 +454,20 @@ impl Mode {
             let mut out = io::stdout();
             loop {
                 match io::copy(&mut dev, &mut out) {
-                    Ok(_) => {}
-                    Err(err) => eprintln!("error: {err:?}"),
+                    Ok(_) => {
+                        #[cfg(windows)]
+                        { current_timeout_count = 0; }
+                    }
+                    // If we're on windows, omit timeout errors, maybe:
+                    #[cfg(windows)]
+                    Err(err) if current_timeout_count < timeouts_before_error && err.kind() == io::ErrorKind::TimedOut => {
+                        current_timeout_count += 1;
+                    },
+                    Err(err) => {
+                        #[cfg(windows)]
+                        { current_timeout_count = 0; }
+                        eprintln!("error: {err:?}")
+                    },
                 }
             }
         }
@@ -464,13 +499,36 @@ impl Mode {
             inp: &mut impl Read,
             sink: &mut impl Write,
             mut line_func: impl FnMut(&str) -> Result<Choice, E>,
+            #[cfg(windows)]
+            timeouts_before_error: u128,
         ) -> Result<(), E> {
             use Choice::*;
+
+            #[cfg(windows)]
+            let mut timeout_count = 0;
 
             let mut inp = BufReader::new(inp);
             let mut buf = String::new();
             loop {
+                #[cfg(not(windows))]
                 inp.read_line(&mut buf).unwrap();
+
+                #[cfg(windows)]
+                {
+                    if let Err(e) = inp.read_line(&mut buf) {
+                        if e.kind() == io::ErrorKind::TimedOut {
+                            timeout_count += 1;
+                            if timeout_count < timeouts_before_error {
+                                continue;
+                            }
+                        }
+
+                        panic!("I/O error: {e}");
+                    } else {
+                        timeout_count = 0;
+                    }
+                }
+
                 match line_func(&buf)? {
                     SendToOutput => sink.write_all(buf.as_bytes()).unwrap(),
                     Break => break,
@@ -538,6 +596,8 @@ impl Mode {
                         &mut dev,
                         &mut io::stdout(),
                         watch_for_panics_and_ends,
+                        #[cfg(windows)]
+                        timeouts_before_error,
                     ))
                 }
             }
@@ -547,6 +607,8 @@ impl Mode {
                     &mut dev,
                     &mut io::stdout(),
                     watch_for_panics_and_ends,
+                    #[cfg(windows)]
+                    timeouts_before_error,
                 ))
             }
             Mode::Run => unreachable!(),
