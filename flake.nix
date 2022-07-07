@@ -44,11 +44,12 @@
             openocd
             picocom
             lm4tools
-            
+
             pkg-config # host serial stuff needs this
-            libudev    # host serial stuff, again
             openssl    # xtask needs this
-          ] ++ gdbPkgs;
+          ] ++ gdbPkgs ++ lib.optionals (pkgs.stdenv.isLinux) [
+            libudev    # host serial stuff, again
+          ];
           shellHook = ''
           '';
         };
