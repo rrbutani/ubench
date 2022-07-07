@@ -1,4 +1,3 @@
-#![allow(unused_imports, unreachable_code)]
 use std::{
     env, fs,
     io::{self, BufRead, BufReader, Read, Write},
@@ -378,7 +377,7 @@ impl Mode {
         #[cfg(windows)]
         let (mut current_timeout_count, timeouts_before_error) = {
             let short_timeout = Duration::from_millis(50);
-            dev.set_timeout(short_timeout);
+            dev.set_timeout(short_timeout).unwrap();
             let timeouts_before_error = timeout.as_nanos() / short_timeout.as_nanos();
 
             (0, timeouts_before_error)
@@ -471,24 +470,6 @@ impl Mode {
                 }
             }
         }
-
-        // let mut dev = BufReader::new(dev);
-        // let mut buf = String::new();
-        // let mut out = io::stdout();
-        // loop {
-        //     match io::copy(&mut dev, &mut out) {
-        //         Ok(_) => {},
-        //         Err(err) => eprintln!("error: {err:?}"),
-        //     }
-        // }
-
-        // loop {
-        //     match dev.read_line(&mut buf) {
-        //         Ok(n) => print!("{}", buf),
-        //         Err(err) => eprintln!("error: {err:?}"),
-        //     }
-        //     buf.clear();
-        // }
 
         enum Choice {
             SendToOutput,
