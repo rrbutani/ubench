@@ -301,11 +301,11 @@ fn flash_program(sh: &Shell, elf_binary: &Path, _device_port: &str) {
         const ICDI_INSTALLATION_LINK: &str = "https://www.ti.com/litv/zip/spmc016a";
 
         let err = str::from_utf8(&res.stderr).unwrap();
-        eprintln!("{} ({}):\n{err}\n", "\nError when flashing".red(), res.status.bold());
+        eprintln!("{} ({}):\n{err}\n", "\nError when flashing".red().bold(), res.status.bold());
 
         if cfg!(windows) && err.contains("Unable to find any ICDI devices") {
             eprintln!(
-                "{}\n\n\t\tDownload link: {}\n\t\tInstructions:  {}",
+                "{}\n\n\tDownload link: {}\n\tInstructions:  {}\n",
                 "Have you installed the TI ICDI drivers?".yellow(),
                 ICDI_INSTALLATION_LINK.underline(),
                 ICDI_INSTRUCTIONS_LINK.underline(),
