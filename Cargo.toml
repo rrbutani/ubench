@@ -39,7 +39,6 @@ json = ["dep:serde"]
 reporters = ["embedded-hal", "json"]
 
 [dev-dependencies]
-# once_cell = "1"
 libm = "0.2"
 
 [package.metadata.docs.rs]
@@ -48,4 +47,6 @@ rustdoc-args = ["--cfg", "docs"]
 all-features = true
 default-target = ""
 
-# TESTS: all-features, no features
+# TESTS: all-features, no features (for no_std/embedded)
+# run `bench` in the two example crates too
+# fmt: all three crates

@@ -5,15 +5,20 @@
     nixpkgs.url      = github:NixOS/nixpkgs/nixos-21.11;
     rust-overlay.url = github:oxalica/rust-overlay;
     flake-utils.url  = github:numtide/flake-utils;
+    # TODO: ditch this once this PR is merged: https://github.com/NixOS/nixpkgs/pull/175052
+    nixpkgs-with-lm4tools.url = github:rrbutani/nixpkgs/feature/lm4tools;
   };
 
-  outputs = { self, nixpkgs, rust-overlay, flake-utils }:
+  outputs = { self, nixpkgs, nixpkgs-with-lm4tools, rust-overlay, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
           inherit system overlays;
         };
+        lm4tools = (import nixpkgs-with-lm4tools {
+          inherit system;
+        }).lm4tools;
 
         rust-toolchain = (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml);
         llvm-tools-preview = builtins.head (builtins.filter (p: p.pname == "llvm-tools-preview") rust-toolchain.paths);
@@ -38,6 +43,7 @@
             rust-toolchain
             openocd
             picocom
+            lm4tools
           ] ++ gdbPkgs;
           shellHook = ''
           '';
