@@ -4,6 +4,10 @@
 //!
 //! TODO!
 
+#![doc(
+    html_root_url = "https://docs.rs/ubench/0.0.0-alpha0", // remember to bump!
+)]
+
 pub mod bench;
 pub use bench::Benchmark;
 

@@ -9,6 +9,8 @@
     nixpkgs-with-lm4tools.url = github:rrbutani/nixpkgs/feature/lm4tools;
   };
 
+  # TODO: garnix, crane
+
   outputs = { self, nixpkgs, nixpkgs-with-lm4tools, rust-overlay, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let

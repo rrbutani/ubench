@@ -1,8 +1,13 @@
 [package]
 name = "ubench"
-version = "0.1.0"
+version = "0.0.0-alpha0" # remember to bump in `lib.rs`!
 edition = "2021"
 rust-version = "1.62.0"
+license = "MIT"
+description = "stopgap rust benchmarking solution for microcontrollers"
+# TODO: keywords, categories
+exclude = ["flake.*", ".envrc"]
+repository = "https://github.com/rrbutani/ubench/"
 
 [dependencies]
 
